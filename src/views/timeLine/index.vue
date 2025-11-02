@@ -600,31 +600,7 @@ $inner-glow: rgba(184, 107, 224, 0.03);
     transition: transform 0.28s ease, box-shadow 0.28s ease;
     width: 100%;
 
-    /* 单侧血泪装饰（靠近头像一侧） */
-    &::after {
-      content: "";
-      position: absolute;
-      right: 18px;
-      top: 18px;
-      width: 6px;
-      height: 18px;
-      border-radius: 40% 40% 60% 60%;
-      background: linear-gradient(
-        180deg,
-        rgba($accent-2, 0.98),
-        rgba($accent-1, 0.6)
-      );
-      filter: blur(0.6px);
-      opacity: 0.92;
-      transform: rotate(8deg);
-      box-shadow: 0 4px 14px rgba($accent-2, 0.06);
-    }
 
-    &:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba($accent-1, 0.045);
-    }
   }
 
   .avatar-wrap {

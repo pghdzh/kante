@@ -25,7 +25,7 @@
         <h1>留言板</h1>
         <span class="title-count">（共{{ count }}条）</span>
 
-        <p class="subtitle">以你之语，谱我之章</p>
+        <p class="subtitle">心语入梦，涟漪回响</p>
       </div>
     </header>
 
@@ -68,100 +68,189 @@
               aria-pressed="false"
             >
               <svg
-                viewBox="0 0 48 48"
-                width="36"
-                height="36"
-                aria-hidden="true"
-                focusable="false"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 128 128"
                 role="img"
-                class="shouan-svg"
+                aria-labelledby="title desc"
               >
-                <!-- 背景环（会由 CSS 控制颜色/透明度） -->
-                <g
-                  class="core-ring"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="0.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path
-                    d="M24 6 C34 6, 42 14, 42 24 C42 34, 34 42, 24 42 C14 42, 6 34, 6 24 C6 14, 14 6, 24 6 Z"
-                  />
+                <title id="title">坎特蕾拉风格 — 水母图标</title>
+                <desc id="desc">
+                  蓝紫配色的水母图标，带柔和光晕与触手，适合作为网站小图标。
+                </desc>
+
+                <defs>
+                  <!-- 背景径向渐变 -->
+                  <radialGradient id="bgRad" cx="35%" cy="25%" r="120%">
+                    <stop offset="0%" stop-color="#081022" />
+                    <stop offset="60%" stop-color="#07102a" />
+                    <stop offset="100%" stop-color="#02030a" />
+                  </radialGradient>
+
+                  <!-- 水母钟状体渐变（冷蓝 -> 紫） -->
+                  <linearGradient id="bellGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#5fe0ff" />
+                    <stop offset="0.55" stop-color="#6f5ce6" />
+                    <stop offset="1" stop-color="#3a1f7a" />
+                  </linearGradient>
+
+                  <!-- 触手渐变 -->
+                  <linearGradient id="tentacleGrad" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0" stop-color="#6f5ce6" />
+                    <stop offset="1" stop-color="#1fb6d7" />
+                  </linearGradient>
+
+                  <!-- 细微高光 -->
+                  <radialGradient id="glow" cx="30%" cy="22%" r="50%">
+                    <stop offset="0%" stop-color="rgba(95,224,255,0.20)" />
+                    <stop offset="100%" stop-color="rgba(95,224,255,0)" />
+                  </radialGradient>
+
+                  <!-- 软阴影 -->
+                  <filter
+                    id="softShadow"
+                    x="-50%"
+                    y="-50%"
+                    width="200%"
+                    height="200%"
+                  >
+                    <feDropShadow
+                      dx="0"
+                      dy="6"
+                      stdDeviation="10"
+                      flood-color="#000"
+                      flood-opacity="0.6"
+                    />
+                  </filter>
+
+                  <!-- 触手抖动动画用 path (静态图标可不启用动画) -->
+                  <filter id="innerBlur">
+                    <feGaussianBlur stdDeviation="1.2" />
+                  </filter>
+                </defs>
+
+                <!-- 背景 -->
+                <rect width="128" height="128" rx="18" fill="url(#bgRad)" />
+
+                <!-- 软光斑（背景） -->
+                <g opacity="0.12">
+                  <circle cx="36" cy="28" r="36" fill="url(#glow)" />
                 </g>
 
-                <!-- 眼形 + 瞳（核心） -->
-                <g
-                  class="core-eye"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
+                <!-- 水母主体（带软阴影） -->
+                <g filter="url(#softShadow)">
+                  <!-- 钟状体外轮廓 -->
                   <path
-                    class="eye-outline"
-                    d="M6 24 C10 14, 18 10, 24 10 C30 10, 38 14, 42 24 C38 32, 30 36, 24 36 C18 36, 10 32, 6 24 Z"
-                    stroke-width="1.0"
+                    d="M64 22
+             C44 22, 30 34, 30 54
+             C30 64, 38 78, 64 78
+             C90 78, 98 64, 98 54
+             C98 34, 84 22, 64 22 Z"
+                    fill="url(#bellGrad)"
+                    opacity="0.98"
                   />
-                  <circle
-                    class="pupil"
-                    cx="24"
-                    cy="24"
-                    r="3"
-                    fill="currentColor"
-                    stroke="none"
-                  />
-                </g>
 
-                <!-- 指挥棒 / 音符 合成体（可单独动画）-->
-                <g
-                  class="bat-note"
-                  transform="translate(0,0)"
-                  fill="currentColor"
-                  stroke="none"
-                >
-                  <!-- 指挥棒柄（细长） -->
-                  <rect
-                    class="bat"
-                    x="30.5"
-                    y="6.5"
-                    width="1.6"
-                    height="18.6"
-                    rx="0.8"
-                    transform="rotate(32 31.3 15.8)"
+                  <!-- 内部半透明层，增加玻璃感 -->
+                  <path
+                    d="M64 30
+             C50 30, 38 40, 38 54
+             C38 62, 48 72, 64 72
+             C80 72, 90 62, 90 54
+             C90 40, 78 30, 64 30 Z"
+                    fill="rgba(255,255,255,0.06)"
                   />
-                  <!-- 音符头（小圆） -->
+
+                  <!-- 顶部高光 -->
                   <ellipse
-                    class="note-head"
-                    cx="34.6"
-                    cy="10.4"
-                    rx="2.6"
-                    ry="3.0"
-                  />
-                  <!-- 连接弧（使形状更具动感） -->
-                  <path
-                    class="note-flag"
-                    d="M33 8 C35 6, 38 6.5, 36 9"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    cx="52"
+                    cy="28"
+                    rx="22"
+                    ry="8"
+                    fill="rgba(255,255,255,0.08)"
+                    transform="rotate(-12 52 28)"
                   />
                 </g>
 
-                <!-- 小星屑 / 飞烬（四个点）-->
+                <!-- 触手群（多条，带渐变与透明） -->
                 <g
-                  class="ember-sparks"
-                  fill="currentColor"
-                  stroke="none"
-                  opacity="0.9"
+                  stroke="url(#tentacleGrad)"
+                  stroke-width="2"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  opacity="0.95"
                 >
-                  <circle class="s1" cx="8" cy="10" r="0.95" />
-                  <circle class="s2" cx="42" cy="14" r="0.8" />
-                  <circle class="s3" cx="38" cy="36" r="0.75" />
-                  <circle class="s4" cx="10" cy="34" r="0.7" />
+                  <path
+                    d="M48 72 C44 86, 40 98, 42 114"
+                    stroke-opacity="0.88"
+                  />
+                  <path
+                    d="M56 74 C54 88, 54 100, 58 116"
+                    stroke-opacity="0.80"
+                  />
+                  <path
+                    d="M68 74 C70 90, 72 102, 72 118"
+                    stroke-opacity="0.84"
+                  />
+                  <path
+                    d="M80 72 C84 86, 88 98, 86 114"
+                    stroke-opacity="0.78"
+                  />
                 </g>
+
+                <!-- 触手细线与点缀 -->
+                <g stroke="#7fbcff" stroke-width="1" opacity="0.62">
+                  <path
+                    d="M50 84 C46 94, 44 106, 46 116"
+                    stroke-opacity="0.6"
+                  />
+                  <path
+                    d="M62 86 C60 96, 60 108, 64 116"
+                    stroke-opacity="0.5"
+                  />
+                  <path
+                    d="M76 86 C78 96, 80 106, 80 116"
+                    stroke-opacity="0.5"
+                  />
+                </g>
+
+                <!-- 中心小装饰（类似水母的“眼/内核”） -->
+                <g>
+                  <circle cx="64" cy="52" r="6" fill="rgba(255,255,255,0.06)" />
+                  <circle
+                    cx="66"
+                    cy="50"
+                    r="3.6"
+                    fill="rgba(95,224,255,0.16)"
+                  />
+                </g>
+
+                <!-- 气泡与微光点缀 -->
+                <g fill="rgba(95,224,255,0.06)">
+                  <circle cx="28" cy="92" r="4" />
+                  <circle cx="42" cy="102" r="2.8" />
+                  <circle cx="96" cy="86" r="3.4" />
+                  <circle cx="110" cy="74" r="2.2" />
+                </g>
+
+                <!-- 底部投影 -->
+                <ellipse
+                  cx="64"
+                  cy="122"
+                  rx="36"
+                  ry="6"
+                  fill="rgba(1,3,8,0.36)"
+                />
+
+                <!-- 细边框高光 -->
+                <rect
+                  x="1.2"
+                  y="1.2"
+                  width="125.6"
+                  height="125.6"
+                  rx="17.4"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.02)"
+                />
               </svg>
             </div>
           </div>
@@ -677,9 +766,6 @@ $blood-halo: rgba(255, 122, 163, 0.04); // 毒色/点缀（保留少量粉红-�
           display: block;
           overflow: visible;
           color: #b86be0;
-          .bat-note {
-            color: #ff6b85;
-          }
         }
 
         &.active {

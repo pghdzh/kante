@@ -444,7 +444,12 @@ $glow-inner: rgba(209, 72, 100, 0.04);
       height: 100%;
       object-fit: cover;
       filter: blur(0.8px) saturate(0.75) brightness(0.88);
-      opacity: 0.88;
+      opacity: 0;
+
+      &.active {
+        opacity: 1;
+       
+      }
     }
   }
 

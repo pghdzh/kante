@@ -423,25 +423,7 @@ $bubble: rgba(95, 224, 255, 0.06);
 
       position: relative;
 
-      /* 右侧“毒纹/血泪”小高光（保留角色双面性） */
-      &::after {
-        content: "";
-        position: absolute;
-        right: -12px;
-        top: 16px;
-        width: 8px;
-        height: 26px;
-        border-radius: 40% 40% 60% 60%;
-        background: linear-gradient(
-          180deg,
-          rgba($venom, 0.98),
-          rgba($accent-1, 0.6)
-        );
-        filter: blur(0.9px) saturate(1.05);
-        opacity: 0.92;
-        transform: rotate(8deg);
-        box-shadow: 0 6px 20px rgba($venom, 0.06);
-      }
+ 
 
       /* 左下方水母触须影（更梦幻） */
       &::before {
