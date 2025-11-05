@@ -448,7 +448,6 @@ $glow-inner: rgba(209, 72, 100, 0.04);
 
       &.active {
         opacity: 1;
-       
       }
     }
   }
