@@ -1,23 +1,23 @@
 <template>
-  <header class="app-header">
-    <h1 class="title">坎特蕾拉电子设定集</h1>
-    <!-- 在线人数展示 -->
-    <div class="online-count" v-if="onlineCount !== null">
-      当前在线：<span class="count">{{ onlineCount }}人</span>
+  <header class="cantarella-header">
+    <!-- 背景的幻梦水母层 (装饰用) -->
+    <div class="jellyfish-bg">
+      <span class="jelly"></span><span class="jelly"></span
+      ><span class="jelly"></span>
     </div>
-    <!-- 移动端汉堡按钮 -->
-    <button
-      class="hamburger"
-      @click="toggleMobileNav"
-      aria-label="Toggle navigation"
-    >
-      <span :class="{ open: mobileNavOpen }"></span>
-      <span :class="{ open: mobileNavOpen }"></span>
-      <span :class="{ open: mobileNavOpen }"></span>
-    </button>
 
-    <!-- 普通导航 & 移动端下拉导航 -->
-    <nav :class="['nav-links', { 'mobile-open': mobileNavOpen }]">
+    <!-- 左侧：珊瑚骨洋伞与家主之名 -->
+    <div class="brand">
+      <!-- 伞icon: 象征她的武器“珊瑚骨洋伞” [citation:4] -->
+      <span class="umbrella-icon">☂︎</span>
+      <h1 class="title">
+        <span class="title-main">坎特蕾拉</span>
+        <span class="title-sub">·电子设定集·</span>
+      </h1>
+    </div>
+
+    <!-- 中央/右侧导航 (桌面) -->
+    <nav class="nav-links" :class="{ 'mobile-open': mobileNavOpen }">
       <RouterLink
         v-for="item in navItems"
         :key="item.name"
@@ -26,20 +26,40 @@
         active-class="active-link"
         @click="mobileNavOpen = false"
       >
-        {{ item.name }}
+        <!-- 毒液滴点缀 + 水母触须效果在css里 -->
+        <span class="item-text">{{ item.name }}</span>
+        <span class="venom-drop"></span>
       </RouterLink>
 
+      <!-- 外链：霜落映界 (保留) -->
       <a
         href="http://slty.site/#/redirector"
         target="_blank"
         rel="noopener"
-        class="nav-item"
-        active-class="active-link"
+        class="nav-item external"
         @click="mobileNavOpen = false"
       >
-        霜落映界
+        <span class="item-text">霜落映界</span>
+        <span class="venom-drop"></span>
       </a>
+
+      <!-- 在线人数 - 嵌入在导航旁，像一个秘药瓶 [citation:4] -->
+      <div class="online-phial" v-if="onlineCount !== null">
+        <span class="phial-glow"></span>
+        <span class="label">梦海共潮</span>
+        <span class="count">{{ onlineCount }}</span>
+        <span class="unit">人</span>
+      </div>
     </nav>
+
+    <!-- 移动端汉堡菜单 (水母伞造型) -->
+    <button class="hamburger" @click="toggleMobileNav" aria-label="toggle menu">
+      <span :class="{ open: mobileNavOpen }"></span>
+      <span :class="{ open: mobileNavOpen }"></span>
+      <span :class="{ open: mobileNavOpen }"></span>
+      <!-- 伞顶小水母 -->
+      <span class="jelly-tassel"></span>
+    </button>
   </header>
 </template>
 
@@ -48,13 +68,15 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 import { io } from "socket.io-client";
 
 const navItems = [
-  { name: "深海梦域", path: "/" }, // 首页 - 坎特蕾拉的深海梦境领域
-  { name: "时潮韵律", path: "/timeLine" }, // 年谱 - 时间如潮汐般起伏的韵律
-  { name: "涟漪心语", path: "/message" }, // 留言板 - 如水面涟漪般扩散的心声
-  { name: "蜃景残像", path: "/gallery" }, // 图集 - 海市蜃楼中定格的残像
-  { name: "渊海秘录", path: "/resources" }, // 资料库 - 深渊之海中的秘密记录
-  { name: "梦语低吟", path: "/voice" }, // 语音馆 - 梦中传来的温柔低语
-  { name: "韵律回廊", path: "/music" }, // 歌曲库 - 充满韵律的梦境回廊
+  { name: "翡萨烈幻梦", path: "/" },
+  { name: "潮痕纪事", path: "/timeLine" },
+  { name: "涟漪心语", path: "/message" },
+  { name: "幻梦画廊", path: "/gallery" },
+  { name: "渊海问答", path: "/talk" },
+  { name: "秘药典籍", path: "/resources" },
+  { name: "深梦呢喃", path: "/voice" },
+  { name: "海潮乐章", path: "/music" },
+  { name: "残章手札", path: "/wiki" },
 ];
 
 const mobileNavOpen = ref(false);
@@ -63,10 +85,7 @@ function toggleMobileNav() {
 }
 
 const siteId = "kante";
-
 const onlineCount = ref<number | null>(null);
-
-// 连接时带上 query.siteId
 const socket: any = io("http://36.150.237.25:3000", {
   query: { siteId },
 });
@@ -83,390 +102,424 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:ital,wght@0,400;1,700&family=ZCOOL+QingKe+HuangYou&display=swap");
+// 引入高贵衬线字体，符合“神秘、高贵、剧毒”气质 [citation:4]
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,500&family=ZCOOL+QingKe+HuangYou&display=swap");
 
-.app-header {
-  /* 基于坎特蕾拉：水母 / 紫蓝海感 + 毒药高光 */
-  --deep-bg: rgba(4, 6, 12, 0.9); // 更深夜海底
-  --glass-accent: rgba(58, 34, 120, 0.06); // 暗紫蓝玻璃感
-  --accent: #7a5fe6; // 暗紫（主光）
-  --accent-2: #5fe0ff; // 冷海蓝（辅助高光）
-  --venom: #ff6b85; // 毒色点缀（保留作对比）
-  --muted-text: #efeef2; // 微冷象牙
-  --wet-sheen: rgba(255, 255, 255, 0.035); // 湿光高光覆盖
-  --bubble: rgba(95, 224, 255, 0.06); // 泡沫微光
+.cantarella-header {
+  // ---------- 坎特蕾拉主题色：深海紫罗兰 + 毒药粉 + 水母荧光 [citation:1][citation:4] ----------
+  --deep-violet: #1f0e3c; // 深渊底色
+  --venom-pink: #ff6b9d; // 毒药/幻觉毒色泽 [citation:1]
+  --jelly-blue: #5ac8fa; // 水母触手荧光
+  --abyss-glow: #7d4ec7; // 紫罗兰高光
+  --pearl-mist: #f0eaf2; // 泡沫白
+  --shadow-abyss: rgba(7, 2, 19, 0.9);
+  --glass-effect: rgba(210, 180, 255, 0.06);
 
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  height: 64px;
+  height: 72px;
+  padding: 0 48px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 40px;
-  background: radial-gradient(
-      600px 120px at 10% 10%,
-      rgba(95, 224, 255, 0.02),
-      transparent 8%
-    ),
-    linear-gradient(180deg, rgba(6, 8, 14, 0.95), rgba(8, 6, 16, 0.94));
-  backdrop-filter: blur(6px) saturate(0.98);
-  box-shadow: 0 8px 36px rgba(3, 4, 6, 0.6), 0 0 18px var(--glass-accent) inset;
-  border-bottom: 1px solid rgba(122, 95, 230, 0.035);
-  animation: fadeInDown 0.6s ease-out both;
-  overflow: visible;
+  justify-content: space-between;
 
-  /* 轻微的表面“湿感”覆盖（伪元素） */
-  &::after {
-    content: "";
+  // 背景：深海漩涡 + 微光
+  background: radial-gradient(circle at 30% 30%, #2a144a, #0c0520 80%);
+  backdrop-filter: blur(10px) saturate(180%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(90, 200, 250, 0.1) inset;
+  border-bottom: 1px solid rgba(255, 107, 157, 0.2);
+
+  // 浮动水母群背景 (纯装饰，不影响点击)
+  .jellyfish-bg {
     position: absolute;
-    left: 0;
-    right: 0;
     top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
     pointer-events: none;
-    background: linear-gradient(180deg, var(--wet-sheen), transparent 20%);
-    mix-blend-mode: overlay;
-  }
-
-  .title {
-    position: relative;
-    font-family: "Cinzel", serif;
-    font-style: italic;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--muted-text);
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 0.4px;
-    text-shadow: 0 6px 22px rgba(6, 6, 10, 0.55), 0 1px 0 rgba(0, 0, 0, 0.28);
-    transition: transform 0.28s ease, text-shadow 0.28s ease;
-    animation: float-slow 10s ease-in-out infinite;
-
-    /* 文字上加薄薄“水波”动感遮罩（伪元素）*/
-    &::before {
-      content: "";
-      position: absolute;
-      left: -6%;
-      top: -18%;
-      width: 120%;
-      height: 140%;
-      background: radial-gradient(
-        circle at 50% 20%,
-        rgba(255, 255, 255, 0.02),
-        transparent 18%
-      );
-      transform: translateY(0);
-      animation: shimmer 6s linear infinite;
-      pointer-events: none;
-      mix-blend-mode: screen;
-    }
-
-    &:hover {
-      transform: translateY(-2px) scale(1.03);
-      text-shadow: 0 10px 36px rgba(122, 95, 230, 0.14),
-        0 2px 0 rgba(0, 0, 0, 0.26);
-    }
-  }
-
-  .online-count {
-    position: relative;
-    margin-left: 16px;
-    padding: 6px 14px;
-    font-family: "Cinzel Decorative", serif;
-    font-size: 1rem;
-    color: var(--muted-text);
-    background: linear-gradient(
-      135deg,
-      rgba(12, 8, 20, 0.26),
-      rgba(8, 6, 18, 0.22)
-    );
-    border: 1px solid rgba(95, 224, 255, 0.04);
-    border-radius: 24px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 22px rgba(3, 4, 6, 0.5),
-      0 0 12px rgba(58, 34, 120, 0.03) inset;
     overflow: hidden;
-    cursor: default;
-    transition: transform 0.22s ease, box-shadow 0.22s ease;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 36px rgba(3, 4, 6, 0.56), 0 0 36px var(--bubble);
-    }
-
-    .count {
-      display: inline-block;
-      margin-left: 18px;
-      font-weight: 700;
-      color: var(--accent-2);
-      background: linear-gradient(90deg, var(--accent), var(--accent-2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 10px rgba(95, 224, 255, 0.06);
+    .jelly {
+      position: absolute;
+      width: 40px;
+      height: 60px;
+      background: radial-gradient(
+        circle at 30% 40%,
+        rgba(90, 200, 250, 0.15),
+        transparent 70%
+      );
+      border-radius: 60% 40% 50% 30% / 40% 50% 40% 50%;
+      filter: blur(8px);
+      animation: floatJelly 18s infinite alternate ease-in-out;
+      &:nth-child(1) {
+        top: 5%;
+        left: 15%;
+        width: 70px;
+        height: 90px;
+        background: rgba(200, 150, 255, 0.08);
+        animation-duration: 22s;
+      }
+      &:nth-child(2) {
+        bottom: -10%;
+        right: 20%;
+        width: 120px;
+        height: 160px;
+        background: rgba(255, 107, 157, 0.06);
+        animation-duration: 28s;
+        animation-delay: -5s;
+      }
+      &:nth-child(3) {
+        top: 40%;
+        right: 5%;
+        width: 50px;
+        height: 70px;
+        background: rgba(90, 200, 250, 0.1);
+        animation-duration: 14s;
+      }
     }
   }
 
+  // 品牌/标题区域 —— 她的洋伞与名字 [citation:4]
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 5;
+    .umbrella-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+      color: var(--jelly-blue);
+      text-shadow: 0 0 15px var(--venom-pink), 0 0 30px #a57cff;
+      transform: rotate(-10deg);
+      filter: drop-shadow(0 4px 6px #00000060);
+      transition: transform 0.3s ease;
+    }
+    .title {
+      font-family: "Playfair Display", "Cinzel", serif;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      .title-main {
+        font-size: 1.8rem;
+        background: linear-gradient(
+          135deg,
+          #fff6f0,
+          var(--jelly-blue),
+          var(--venom-pink)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 30px rgba(255, 107, 157, 0.5);
+        margin-right: 6px;
+      }
+      .title-sub {
+        font-size: 0.9rem;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.65);
+        text-shadow: 0 0 10px var(--jelly-blue);
+        letter-spacing: 0.2rem;
+      }
+    }
+    &:hover .umbrella-icon {
+      transform: rotate(0deg) scale(1.05);
+    }
+  }
+
+  // 导航区域 + 秘药瓶在线显示
   .nav-links {
     display: flex;
-    gap: 22px;
     align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 5;
 
     .nav-item {
       position: relative;
-      color: var(--muted-text);
-      font-weight: 500;
+      padding: 8px 14px;
+      color: var(--pearl-mist);
       text-decoration: none;
-      transition: color 0.22s ease, transform 0.16s ease;
-      padding: 6px 4px;
-      border-radius: 6px;
-      overflow: visible;
-      font-family: "STKaiti", "KaiTi", "Noto Serif SC", serif;
-      font-style: italic;
+      font-family: "Playfair Display", serif;
+      font-weight: 500;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+      transition: all 0.25s;
+      border-radius: 30px;
+      white-space: nowrap;
 
+      // 毒液滴 (坎特蕾拉的幻觉毒) [citation:1]
+      .venom-drop {
+        position: absolute;
+        right: -2px;
+        top: -4px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--venom-pink);
+        filter: blur(2px);
+        opacity: 0;
+        transition: opacity 0.3s, transform 0.3s;
+        box-shadow: 0 0 12px #ff3b7a;
+        &::after {
+          content: "";
+          position: absolute;
+          top: 5px;
+          left: 2px;
+          width: 4px;
+          height: 8px;
+          background: var(--venom-pink);
+          border-radius: 50%;
+          filter: blur(3px);
+        }
+      }
+
+      // 水母触须下划线 (幻觉与毒的交织)
       &::after {
         content: "";
         position: absolute;
         left: 50%;
-        bottom: -8px;
+        bottom: 0;
         width: 0;
-        height: 6px;
-        border-radius: 6px;
+        height: 2px;
         background: linear-gradient(
           90deg,
-          rgba(0, 0, 0, 0),
-          rgba(122, 95, 230, 0.9),
-          rgba(95, 224, 255, 0.85),
-          rgba(0, 0, 0, 0)
+          transparent,
+          var(--jelly-blue),
+          var(--venom-pink),
+          transparent
         );
         transform: translateX(-50%);
-        opacity: 0.95;
-        filter: blur(0.8px) contrast(1.03);
-        transition: width 0.36s cubic-bezier(0.2, 0.9, 0.2, 1), left 0.36s,
-          opacity 0.24s;
-        background-size: 200% 100%;
-        animation: flow-wave 6.5s linear infinite;
-      }
-
-      /* 悬停增加“毒液滴”效果（微交互） */
-      &::before {
-        content: "";
-        position: absolute;
-        right: 10%;
-        top: -6px;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: linear-gradient(180deg, var(--accent), var(--accent-2));
-        opacity: 0;
-        transform: translateY(-6px);
-        transition: opacity 0.26s, transform 0.36s;
-        box-shadow: 0 4px 8px rgba(255, 107, 133, 0.08);
+        transition: width 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+        border-radius: 2px;
+        filter: drop-shadow(0 0 6px #5ac8fa);
       }
 
       &:hover {
-        color: var(--accent-2);
-        transform: translateY(-1.8px);
-        text-shadow: 0 0 8px rgba(95, 224, 255, 0.04);
+        color: white;
+        transform: translateY(-2px);
+        text-shadow: 0 0 14px var(--jelly-blue), 0 0 30px var(--venom-pink);
+        .venom-drop {
+          opacity: 0.9;
+          transform: scale(1.2);
+        }
+        &::after {
+          width: 80%;
+        }
       }
 
-      &:hover::after {
-        width: 72%;
-        left: 50%;
-        opacity: 1;
-      }
+      // 激活项：毒素弥漫 + 音符飘浮 (结合梦中低语) [citation:3]
+      &.active-link {
+        color: white;
+        font-weight: 600;
+        background: rgba(255, 107, 157, 0.08);
+        box-shadow: 0 0 20px rgba(90, 200, 250, 0.2);
 
-      &:hover::before {
-        opacity: 1;
-        transform: translateY(0);
+        .venom-drop {
+          opacity: 1;
+          animation: dropPulse 2s infinite;
+        }
+        &::before {
+          content: "♫";
+          position: absolute;
+          left: -4px;
+          top: -2px;
+          font-size: 14px;
+          color: var(--jelly-blue);
+          filter: drop-shadow(0 0 5px hotpink);
+          animation: floatNote 3s infinite;
+        }
+        &::after {
+          width: 85%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            var(--venom-pink),
+            var(--jelly-blue),
+            transparent
+          );
+          height: 3px;
+          filter: blur(1px);
+        }
       }
     }
 
-    .active-link {
-      color: var(--accent);
-      font-weight: 600;
-
-      &::before {
-        content: "♪";
+    // 秘药瓶在线人数 [citation:4]  ———— 翡萨烈家主的秘药瓶
+    .online-phial {
+      margin-left: 20px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      background: linear-gradient(145deg, #23153c, #130b24);
+      padding: 6px 18px 6px 16px;
+      border-radius: 40px;
+      border: 1px solid rgba(90, 200, 250, 0.3);
+      box-shadow: 0 0 20px rgba(255, 107, 157, 0.3), inset 0 0 10px #2f1b4e;
+      position: relative;
+      backdrop-filter: blur(4px);
+      .phial-glow {
         position: absolute;
-        right: -6px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 12px;
-        color: var(--accent);
-        text-shadow: 0 2px 8px rgba(122, 95, 230, 0.12);
-        animation: note-float 3.6s ease-in-out infinite;
-        opacity: 0.95;
+        inset: 0;
+        border-radius: 40px;
+        background: radial-gradient(
+          circle at 30% 50%,
+          rgba(255, 200, 230, 0.2),
+          transparent 70%
+        );
+        pointer-events: none;
       }
-
-      &::after {
-        width: 92%;
-        opacity: 1;
-        box-shadow: 0 6px 22px rgba(122, 95, 230, 0.08);
+      .label {
+        font-size: 0.85rem;
+        color: #b9b0d4;
+        font-style: italic;
+        letter-spacing: 0.1rem;
+      }
+      .count {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #ffe6f0, var(--jelly-blue));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1;
+        text-shadow: 0 0 15px cyan;
+      }
+      .unit {
+        font-size: 0.9rem;
+        color: var(--venom-pink);
+        opacity: 0.9;
       }
     }
   }
 
+  // 移动端汉堡菜单 (水母伞造型)
   .hamburger {
     display: none;
     flex-direction: column;
-    justify-content: space-around;
-    width: 28px;
-    height: 24px;
-    background: none;
-    border: none;
+    justify-content: center;
+    align-items: center;
+    width: 42px;
+    height: 42px;
+    background: rgba(45, 20, 60, 0.6);
+    border: 1px solid var(--jelly-blue);
+    border-radius: 50%;
+    backdrop-filter: blur(8px);
+    position: relative;
+    z-index: 20;
     cursor: pointer;
-    padding: 0;
-
+    box-shadow: 0 0 20px #ff6b9d80;
     span {
       display: block;
-      width: 100%;
-      height: 3px;
-      background: rgba(239, 233, 236, 0.92);
-      border-radius: 2px;
-      transition: transform 0.28s ease, opacity 0.28s ease, background 0.28s;
-      box-shadow: 0 2px 6px rgba(8, 6, 10, 0.18),
-        0 0 8px rgba(58, 34, 120, 0.02);
+      width: 22px;
+      height: 2px;
+      background: var(--jelly-blue);
+      margin: 3px 0;
+      border-radius: 4px;
+      transition: 0.2s;
+      box-shadow: 0 0 8px var(--venom-pink);
     }
-
+    .jelly-tassel {
+      position: absolute;
+      top: -5px;
+      right: -2px;
+      width: 14px;
+      height: 14px;
+      background: var(--venom-pink);
+      border-radius: 50% 30% 50% 30%;
+      filter: blur(4px);
+      opacity: 0.8;
+    }
     span.open:nth-child(1) {
-      transform: translateY(10px) rotate(45deg);
-      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transform: translateY(8px) rotate(45deg);
+      background: var(--venom-pink);
     }
-
     span.open:nth-child(2) {
       opacity: 0;
     }
-
     span.open:nth-child(3) {
-      transform: translateY(-10px) rotate(-45deg);
-      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transform: translateY(-8px) rotate(-45deg);
+      background: var(--venom-pink);
     }
   }
 
-  @media (max-width: 768px) {
-    padding: 0 20px;
-
-    .title {
+  // 移动端响应式
+  @media (max-width: 920px) {
+    padding: 0 24px;
+    .brand .title-sub {
       display: none;
     }
+  }
+  @media (max-width: 768px) {
     .hamburger {
       display: flex;
     }
-
     .nav-links {
       position: absolute;
-      top: 64px;
+      top: 72px;
       left: 0;
       right: 0;
       flex-direction: column;
-      background: linear-gradient(
-        180deg,
-        rgba(8, 6, 12, 0.98),
-        rgba(6, 4, 10, 0.995)
-      );
-      backdrop-filter: blur(12px);
-      gap: 0;
-      overflow: hidden;
+      background: rgba(8, 3, 20, 0.98);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--venom-pink);
+      padding: 0 10px;
       max-height: 0;
-      transition: max-height 0.34s ease;
-      border-top: 1px solid rgba(95, 224, 255, 0.03);
-
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+      gap: 8px;
       &.mobile-open {
-        max-height: 520px;
+        max-height: 780px;
       }
-
       .nav-item {
-        padding: 14px 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        width: 100%;
+        text-align: center;
+        padding: 14px 0;
       }
+      .online-phial {
+        margin: 16px 0 0 0;
+        justify-content: center;
+        width: fit-content;
+      }
+    }
+    .brand .title-main {
+      font-size: 1.5rem;
     }
   }
 }
 
-/* 动效关键帧 */
-@keyframes flow-wave {
+// 动画
+@keyframes floatJelly {
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
   }
   100% {
-    background-position: 0% 50%;
+    transform: translate(20px, -15px) rotate(8deg) scale(1.05);
   }
 }
-
-@keyframes float-slow {
+@keyframes dropPulse {
   0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3.5px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInDown {
-  0% {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes note-float {
-  0% {
-    transform: translateY(-6%) rotate(-6deg);
-    opacity: 0.85;
-  }
-  50% {
-    transform: translateY(6%) rotate(2deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-6%) rotate(-6deg);
-    opacity: 0.85;
-  }
-}
-
-/* 额外：气泡上升 & 文字光泽 */
-@keyframes bubble-rise {
-  0% {
-    transform: translateY(6px) translateX(0);
-    opacity: 0.08;
-  }
-  50% {
-    opacity: 0.16;
-    transform: translateY(-6px) translateX(8px);
-  }
-  100% {
-    transform: translateY(-22px) translateX(0);
-    opacity: 0.02;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateY(0) rotate(0deg);
     opacity: 0.6;
+    transform: scale(1);
   }
   50% {
-    transform: translateY(-6px) rotate(1deg);
     opacity: 1;
+    transform: scale(1.5);
   }
   100% {
-    transform: translateY(0) rotate(0deg);
     opacity: 0.6;
+    transform: scale(1);
+  }
+}
+@keyframes floatNote {
+  0% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(5deg);
+  }
+  100% {
+    transform: translateY(0) rotate(-5deg);
   }
 }
 </style>

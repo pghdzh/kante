@@ -1,292 +1,128 @@
 <template>
-  <div class="megumi-message-board" aria-live="polite">
+  <div class="cantarella-message-board" aria-live="polite">
     <!-- 背景轮播（两组用于桌面/移动不同裁切） -->
-    <div class="carousel carousel1" aria-hidden="true">
+    <div class="carousel carousel-desktop" aria-hidden="true">
       <img
-        v-for="(src, idx) in randomFive"
+        v-for="(src, idx) in desktopImages"
         :key="idx"
         :src="src"
         class="carousel-image"
         :class="{ active: idx === currentIndex }"
+        alt=""
       />
     </div>
-    <div class="carousel carousel2" aria-hidden="true">
+    <div class="carousel carousel-mobile" aria-hidden="true">
       <img
-        v-for="(src, idx) in randomFive2"
+        v-for="(src, idx) in mobileImages"
         :key="idx"
         :src="src"
         class="carousel-image"
         :class="{ active: idx === currentIndex }"
+        alt=""
       />
     </div>
-    <!-- 半透明顶部标题 -->
-    <header class="board-header" role="banner">
-      <div class="title-wrap">
-        <h1>留言板</h1>
-        <span class="title-count">（共{{ count }}条）</span>
 
-        <p class="subtitle">心语入梦，涟漪回响</p>
+    <!-- 头部：深海明珠 -->
+    <header class="board-header" role="banner">
+      <div class="pearl">
+        <h1>翡萨烈·幻梦回响</h1>
+        <div class="pearl-count">
+          <span>{{ totalCount }}</span> 条回响
+        </div>
       </div>
+      <div class="tendrils">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <p class="subtitle">微光穿透深海，映照出隐现于汹涌浪潮之间的温柔呢喃……</p>
     </header>
 
-    <!-- 留言展示区 -->
+    <!-- 留言列表（无限滚动） -->
     <section class="message-list">
-      <transition-group name="msg" tag="div" class="message-list-inner">
-        <div v-if="loading" class="skeleton-wrap" key="skeleton">
-          <div class="skeleton" v-for="i in 1" :key="i">
-            <div class="sk-avatar"></div>
-            <div class="sk-lines">
-              <div class="sk-line short"></div>
-              <div class="sk-line"></div>
-            </div>
+      <div class="message-list-inner">
+        <!-- 首次加载骨架屏 -->
+        <div v-if="loading && messages.length === 0" class="skeleton-wrap">
+          <div class="skeleton" v-for="i in 3" :key="i">
+            <div class="sk-glow"></div>
           </div>
         </div>
-        <div
-          v-for="(msg, idx) in messages"
-          :key="msg.id || msg._tempId || idx"
-          class="message-card"
-          :data-index="idx"
-          tabindex="0"
-          role="article"
-          :aria-label="`留言来自 ${msg.name || '匿名'}，内容：${msg.content}`"
-        >
-          <div class="message-meta">
-            <div class="left-meta">
-              <div class="name-avatar" :title="msg.name || '匿名'">
-                {{ getInitial(msg.name) }}
+
+        <!-- 留言卡片 -->
+        <transition-group name="msg" tag="div" class="messages-container">
+          <div
+            v-for="(msg, idx) in messages"
+            :key="msg.id"
+            class="message-card"
+            :data-index="idx"
+            tabindex="0"
+            role="article"
+            :aria-label="`留言来自 ${msg.name || '匿名'}，内容：${msg.content}`"
+          >
+            <div class="card-inner">
+              <div class="message-header">
+                <div class="avatar" :title="msg.name || '匿名'">
+                  {{ getInitial(msg.name) }}
+                  <span class="avatar-glow"></span>
+                </div>
+                <div class="header-text">
+                  <div class="message-name">{{ msg.name || "匿名" }}</div>
+                  <div class="message-time">
+                    {{ formatTime(msg.created_at) }}
+                  </div>
+                </div>
               </div>
-              <div class="meta-texts">
-                <div class="message-name">{{ msg.name || "匿名" }}</div>
-                <div class="message-time">{{ formatTime(msg.created_at) }}</div>
+              <p class="message-content">{{ msg.content }}</p>
+              <div class="card-footer">
+                <span class="ripple"></span>
               </div>
-            </div>
-            <div
-              class="shouan-icon"
-              role="button"
-              tabindex="0"
-              aria-label="共鸣之晶"
-              aria-pressed="false"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 128 128"
-                role="img"
-                aria-labelledby="title desc"
-              >
-                <title id="title">坎特蕾拉风格 — 水母图标</title>
-                <desc id="desc">
-                  蓝紫配色的水母图标，带柔和光晕与触手，适合作为网站小图标。
-                </desc>
-
-                <defs>
-                  <!-- 背景径向渐变 -->
-                  <radialGradient id="bgRad" cx="35%" cy="25%" r="120%">
-                    <stop offset="0%" stop-color="#081022" />
-                    <stop offset="60%" stop-color="#07102a" />
-                    <stop offset="100%" stop-color="#02030a" />
-                  </radialGradient>
-
-                  <!-- 水母钟状体渐变（冷蓝 -> 紫） -->
-                  <linearGradient id="bellGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#5fe0ff" />
-                    <stop offset="0.55" stop-color="#6f5ce6" />
-                    <stop offset="1" stop-color="#3a1f7a" />
-                  </linearGradient>
-
-                  <!-- 触手渐变 -->
-                  <linearGradient id="tentacleGrad" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0" stop-color="#6f5ce6" />
-                    <stop offset="1" stop-color="#1fb6d7" />
-                  </linearGradient>
-
-                  <!-- 细微高光 -->
-                  <radialGradient id="glow" cx="30%" cy="22%" r="50%">
-                    <stop offset="0%" stop-color="rgba(95,224,255,0.20)" />
-                    <stop offset="100%" stop-color="rgba(95,224,255,0)" />
-                  </radialGradient>
-
-                  <!-- 软阴影 -->
-                  <filter
-                    id="softShadow"
-                    x="-50%"
-                    y="-50%"
-                    width="200%"
-                    height="200%"
-                  >
-                    <feDropShadow
-                      dx="0"
-                      dy="6"
-                      stdDeviation="10"
-                      flood-color="#000"
-                      flood-opacity="0.6"
-                    />
-                  </filter>
-
-                  <!-- 触手抖动动画用 path (静态图标可不启用动画) -->
-                  <filter id="innerBlur">
-                    <feGaussianBlur stdDeviation="1.2" />
-                  </filter>
-                </defs>
-
-                <!-- 背景 -->
-                <rect width="128" height="128" rx="18" fill="url(#bgRad)" />
-
-                <!-- 软光斑（背景） -->
-                <g opacity="0.12">
-                  <circle cx="36" cy="28" r="36" fill="url(#glow)" />
-                </g>
-
-                <!-- 水母主体（带软阴影） -->
-                <g filter="url(#softShadow)">
-                  <!-- 钟状体外轮廓 -->
-                  <path
-                    d="M64 22
-             C44 22, 30 34, 30 54
-             C30 64, 38 78, 64 78
-             C90 78, 98 64, 98 54
-             C98 34, 84 22, 64 22 Z"
-                    fill="url(#bellGrad)"
-                    opacity="0.98"
-                  />
-
-                  <!-- 内部半透明层，增加玻璃感 -->
-                  <path
-                    d="M64 30
-             C50 30, 38 40, 38 54
-             C38 62, 48 72, 64 72
-             C80 72, 90 62, 90 54
-             C90 40, 78 30, 64 30 Z"
-                    fill="rgba(255,255,255,0.06)"
-                  />
-
-                  <!-- 顶部高光 -->
-                  <ellipse
-                    cx="52"
-                    cy="28"
-                    rx="22"
-                    ry="8"
-                    fill="rgba(255,255,255,0.08)"
-                    transform="rotate(-12 52 28)"
-                  />
-                </g>
-
-                <!-- 触手群（多条，带渐变与透明） -->
-                <g
-                  stroke="url(#tentacleGrad)"
-                  stroke-width="2"
-                  fill="none"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  opacity="0.95"
-                >
-                  <path
-                    d="M48 72 C44 86, 40 98, 42 114"
-                    stroke-opacity="0.88"
-                  />
-                  <path
-                    d="M56 74 C54 88, 54 100, 58 116"
-                    stroke-opacity="0.80"
-                  />
-                  <path
-                    d="M68 74 C70 90, 72 102, 72 118"
-                    stroke-opacity="0.84"
-                  />
-                  <path
-                    d="M80 72 C84 86, 88 98, 86 114"
-                    stroke-opacity="0.78"
-                  />
-                </g>
-
-                <!-- 触手细线与点缀 -->
-                <g stroke="#7fbcff" stroke-width="1" opacity="0.62">
-                  <path
-                    d="M50 84 C46 94, 44 106, 46 116"
-                    stroke-opacity="0.6"
-                  />
-                  <path
-                    d="M62 86 C60 96, 60 108, 64 116"
-                    stroke-opacity="0.5"
-                  />
-                  <path
-                    d="M76 86 C78 96, 80 106, 80 116"
-                    stroke-opacity="0.5"
-                  />
-                </g>
-
-                <!-- 中心小装饰（类似水母的“眼/内核”） -->
-                <g>
-                  <circle cx="64" cy="52" r="6" fill="rgba(255,255,255,0.06)" />
-                  <circle
-                    cx="66"
-                    cy="50"
-                    r="3.6"
-                    fill="rgba(95,224,255,0.16)"
-                  />
-                </g>
-
-                <!-- 气泡与微光点缀 -->
-                <g fill="rgba(95,224,255,0.06)">
-                  <circle cx="28" cy="92" r="4" />
-                  <circle cx="42" cy="102" r="2.8" />
-                  <circle cx="96" cy="86" r="3.4" />
-                  <circle cx="110" cy="74" r="2.2" />
-                </g>
-
-                <!-- 底部投影 -->
-                <ellipse
-                  cx="64"
-                  cy="122"
-                  rx="36"
-                  ry="6"
-                  fill="rgba(1,3,8,0.36)"
-                />
-
-                <!-- 细边框高光 -->
-                <rect
-                  x="1.2"
-                  y="1.2"
-                  width="125.6"
-                  height="125.6"
-                  rx="17.4"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.02)"
-                />
-              </svg>
             </div>
           </div>
+        </transition-group>
 
-          <p class="message-content">{{ msg.content }}</p>
+        <!-- 无限滚动哨兵 & 加载更多指示器 -->
+        <div ref="sentinel" class="sentinel"></div>
+        <div v-if="loadingMore" class="loading-more">
+          <div class="jelly-loader"></div>
+          <span>浮出水面……</span>
         </div>
-      </transition-group>
+        <div v-if="!hasMore && messages.length > 0" class="no-more">
+          —— 已至深海之底 ——
+        </div>
+      </div>
     </section>
 
-    <!-- 底部发送区 -->
-    <section class="message-form" aria-label="写下你的留言">
-      <label class="sr-only" for="mb-name">你的昵称</label>
-      <input
-        id="mb-name"
-        v-model="name"
-        type="text"
-        placeholder="你的昵称"
-        @keydown.enter.prevent
-      />
+    <!-- 底部留言区：珊瑚台 -->
+    <section class="message-form" aria-label="留下你的幻梦回响">
+      <div class="coral-base">
+        <div class="form-container">
+          <label class="sr-only" for="mb-name">昵称</label>
+          <input
+            id="mb-name"
+            v-model="name"
+            type="text"
+            placeholder="你的名字（翡萨烈之名）"
+            @keydown.enter.prevent
+          />
 
-      <label class="sr-only" for="mb-content">留言内容</label>
-      <textarea
-        id="mb-content"
-        v-model="content"
-        placeholder="写下你的留言..."
-        @keydown.ctrl.enter.prevent="submitMessage"
-        @input="autoGrow"
-        ref="textareaRef"
-      />
+          <label class="sr-only" for="mb-content">留言内容</label>
+          <textarea
+            id="mb-content"
+            v-model="content"
+            placeholder="写下你的幻梦回响..."
+            @keydown.ctrl.enter.prevent="submitMessage"
+            @input="autoGrow"
+            ref="textareaRef"
+          />
 
-      <div class="form-row">
-        <div class="hint">按 <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 快捷发送</div>
-        <button @click="submitMessage" :disabled="isSending || !content.trim()">
-          <span v-if="!isSending">发送</span>
-          <span v-else>发送中…</span>
-        </button>
+          <div class="form-actions">
+            <div class="hint"><kbd>ctrl</kbd> + <kbd>enter</kbd>快速发送</div>
+            <button
+              @click="submitMessage"
+              :disabled="isSending || !content.trim()"
+            >
+              {{ isSending ? "熬制秘药中…" : "沉入幻梦" }}
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -296,74 +132,22 @@
 import { ref, onMounted, nextTick, onBeforeUnmount } from "vue";
 import { getMessageList, createMessage } from "@/api/modules/message";
 
+// 留言数据
 const messages = ref<any[]>([]);
-const count = ref(0);
+const totalCount = ref(0);
 const name = ref(localStorage.getItem("message_name") || "");
 const content = ref("");
 const loading = ref(true);
 const isSending = ref(false);
-
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 
-const fetchMessages = async () => {
-  loading.value = true;
-  try {
-    const res = await getMessageList({ page: 1, pageSize: 9999 });
-    messages.value = res.data || [];
-    count.value = res.pagination.total;
-    await nextTick();
-  } catch (err) {
-    console.error(err);
-  } finally {
-    loading.value = false;
-  }
-};
+// 分页相关
+const currentPage = ref(1);
+const pageSize = 20;
+const hasMore = ref(true);
+const loadingMore = ref(false);
 
-const submitMessage = async () => {
-  if (!content.value.trim() || isSending.value) return;
-  isSending.value = true;
-  const payload = { name: name.value || "匿名", content: content.value };
-  try {
-    localStorage.setItem("message_name", name.value);
-    content.value = "";
-    await nextTick();
-    // 发送请求
-    await createMessage(payload);
-    // 重新同步列表（更可靠）
-    await fetchMessages();
-  } catch (err) {
-    console.error(err);
-  } finally {
-    isSending.value = false;
-  }
-};
-
-const formatTime = (time: string) => {
-  if (!time) return "";
-  const d = new Date(time);
-  // 例如：2025-08-11 15:30
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${day} ${hh}:${mm}`;
-};
-
-const getInitial = (n?: string) => {
-  if (!n) return "匿";
-  return n.trim().slice(0, 1).toUpperCase();
-};
-
-const autoGrow = (e?: Event) => {
-  const ta = textareaRef.value;
-  if (!ta) return;
-  ta.style.height = "auto";
-  const h = Math.min(ta.scrollHeight, 220);
-  ta.style.height = h + "px";
-};
-
-// ========== 背景图片导入与轮播 ==========
+// 背景图片轮播
 const modules = import.meta.glob("@/assets/images1/*.{jpg,png,jpeg,webp}", {
   eager: true,
 });
@@ -384,98 +168,171 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a;
 }
-const randomFive = ref<string[]>(shuffle(allSrcs).slice(0, 5));
-const randomFive2 = ref<string[]>(shuffle(allSrcs2).slice(0, 5));
 
+const desktopImages = ref<string[]>(shuffle(allSrcs).slice(0, 5));
+const mobileImages = ref<string[]>(shuffle(allSrcs2).slice(0, 5));
 const currentIndex = ref(0);
-let Imgtimer: number | undefined;
+let carouselTimer: number | undefined;
+
+// 获取留言（支持分页）
+const fetchMessages = async (page: number, append = false) => {
+  if (append) {
+    loadingMore.value = true;
+  } else {
+    loading.value = true;
+  }
+
+  try {
+    const res = await getMessageList({ page, pageSize });
+    const newMessages = res.data || [];
+    const pagination = res.pagination;
+
+    if (append) {
+      messages.value = [...messages.value, ...newMessages];
+    } else {
+      messages.value = newMessages;
+    }
+
+    totalCount.value = pagination.total;
+    hasMore.value = page < pagination.totalPages;
+    currentPage.value = page;
+  } catch (err) {
+    console.error(err);
+  } finally {
+    loading.value = false;
+    loadingMore.value = false;
+  }
+};
+
+// 提交留言
+const submitMessage = async () => {
+  if (!content.value.trim() || isSending.value) return;
+  isSending.value = true;
+  const payload = { name: name.value || "匿名", content: content.value };
+  try {
+    localStorage.setItem("message_name", name.value);
+    content.value = "";
+    await nextTick();
+    await createMessage(payload);
+    // 重置列表，从第一页重新加载
+    messages.value = [];
+    await fetchMessages(1, false);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    isSending.value = false;
+  }
+};
+
+// 时间格式化
+const formatTime = (time: string) => {
+  if (!time) return "";
+  const d = new Date(time);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day} ${hh}:${mm}`;
+};
+
+// 获取首字母
+const getInitial = (n?: string) => {
+  if (!n) return "匿";
+  return n.trim().slice(0, 1).toUpperCase();
+};
+
+// 自动增高文本框
+const autoGrow = () => {
+  const ta = textareaRef.value;
+  if (!ta) return;
+  ta.style.height = "auto";
+  ta.style.height = Math.min(ta.scrollHeight, 220) + "px";
+};
+
+// 无限滚动哨兵
+const sentinel = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+const setupObserver = () => {
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (
+        entries[0].isIntersecting &&
+        hasMore.value &&
+        !loadingMore.value &&
+        !loading.value
+      ) {
+        fetchMessages(currentPage.value + 1, true);
+      }
+    },
+    { threshold: 0.1 }
+  );
+
+  if (sentinel.value) {
+    observer.observe(sentinel.value);
+  }
+};
 
 onMounted(() => {
-  fetchMessages();
-  Imgtimer = window.setInterval(() => {
-    currentIndex.value =
-      (currentIndex.value + 1) % Math.max(1, randomFive.value.length);
+  fetchMessages(1, false).then(() => {
+    nextTick(() => {
+      setupObserver();
+    });
+  });
+
+  carouselTimer = window.setInterval(() => {
+    currentIndex.value = (currentIndex.value + 1) % desktopImages.value.length;
   }, 5200);
+
   nextTick(() => autoGrow());
 });
 
 onBeforeUnmount(() => {
-  if (Imgtimer) clearInterval(Imgtimer);
+  if (carouselTimer) clearInterval(carouselTimer);
+  if (observer) observer.disconnect();
 });
 </script>
 
 <style scoped lang="scss">
-/* 坎特蕾拉色板（变量名保持不变） */
-$bg-start: #04060b; // 深海夜色（更冷的湮灭底）
-$bg-end: #081022; // 次深底（深紫-海蓝过渡）
+/* 坎特蕾拉色板 - 全新轻透版本 */
+$deep-bg: #030614; // 极深海
+$mid-bg: #14213d; // 深海中层
+$accent-lavender: #b8a9ff; // 薰衣草紫
+$accent-aqua: #7ae2ff; // 水母荧光
+$accent-pink: #ffb3c6; // 毒药粉
+$accent-deep-blue: #2a4a7a; // 深海蓝
+$text-light: #f0f5fe;
+$card-bg: rgba(255, 255, 255, 0.03);
+$glass-edge: rgba($accent-aqua, 0.15);
 
-$accent-1: #6f5ce6; // 暗紫主光（冷雅）
-$accent-2: #5fe0ff; // 冷海蓝高光（湿光 / 治愈感）
-
-$text-main: #eae9ee; // 主文字（微冷象牙）
-$text-muted: rgba(234, 233, 238, 0.78);
-
-$card-bg: rgba(6, 8, 12, 0.46); // 暗紫玻璃卡片（含湿感）
-$card-border: rgba(95, 224, 255, 0.04); // 卡片边框走海蓝高光
-
-$soft-shadow: rgba(0, 0, 0, 0.64);
-$inner-glow: rgba(95, 224, 255, 0.02); // 内发光：偏海蓝的微弱光晕
-
-$blood-halo: rgba(255, 122, 163, 0.04); // 毒色/点缀（保留少量粉红-毒感）
-
-.megumi-message-board {
+.cantarella-message-board {
   position: relative;
   min-height: 100vh;
-  padding-top: 110px;
+  padding: 100px 20px 200px;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, $bg-start 0%, $bg-end 100%);
-  font-family: "Noto Sans SC", "Noto Sans", system-ui, -apple-system, "Segoe UI",
-    Roboto, Arial;
-  color: $text-main;
-  overflow: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(180deg, $deep-bg 0%, $mid-bg 100%);
+  color: $text-light;
+  overflow-y: auto;
 
-  /* 整页弱雾与暗紫颗粒（可做背景氛围） */
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background-image: radial-gradient(
-        circle at 12% 18%,
-        rgba($accent-1, 0.04) 0 2px,
-        transparent 6px
-      ),
-      radial-gradient(
-        circle at 70% 40%,
-        rgba($accent-2, 0.03) 0 2px,
-        transparent 6px
-      );
-    mix-blend-mode: screen;
-    filter: blur(6px);
-    opacity: 0.95;
-  }
-
+  /* 背景轮播 */
   .carousel {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
 
-    &::before {
+    &::after {
       content: "";
       position: absolute;
       inset: 0;
       background: linear-gradient(
         180deg,
-        rgba(4, 6, 8, 0.16),
-        rgba(6, 4, 6, 0.32)
+        rgba($deep-bg, 0.6) 0%,
+        rgba($mid-bg, 0.8) 100%
       );
       z-index: 1;
-      mix-blend-mode: soft-light;
     }
 
     .carousel-image {
@@ -484,599 +341,551 @@ $blood-halo: rgba(255, 122, 163, 0.04); // 毒色/点缀（保留少量粉红-�
       height: 100%;
       object-fit: cover;
       opacity: 0;
-      transition: opacity 1s ease, transform 10s linear;
-      filter: blur(0.6px) saturate(0.72) contrast(0.95) brightness(0.88);
-      transform: scale(1.05);
+      transition: opacity 2s ease-in-out;
 
       &.active {
         opacity: 1;
-        transform: scale(1);
       }
     }
   }
-
-  .carousel2 {
+  .carousel-mobile {
     display: none;
   }
 
-  /* ---------- 顶部标题（改为乐谱 + 暗紫珍珠玻璃） ---------- */
+  /* ===== 头部：深海明珠 ===== */
   .board-header {
-    position: absolute;
-    top: 72px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 32px);
+    position: relative;
+    z-index: 10;
     max-width: 960px;
-    padding: 14px 18px;
-    border-radius: 14px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.7), inset 0 1px 0 $inner-glow;
-    backdrop-filter: blur(8px) saturate(0.9);
-    z-index: 6;
-    border: 1px solid rgba(255, 107, 133, 0.02);
-    background: linear-gradient(
-      180deg,
-      rgba(10, 8, 10, 0.16),
-      rgba(6, 6, 8, 0.22)
-    );
+    margin: 0 auto 40px;
+    width: 100%;
+    text-align: center;
 
-    /* 乐谱细线（非常低不透明） */
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 6% 0 6% 0;
-      z-index: -1;
-      pointer-events: none;
-      background-image: repeating-linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.02) 0px,
-        rgba(255, 255, 255, 0.02) 1px,
-        transparent 1px,
-        transparent 18px
-      );
-      opacity: 0.06;
-      mix-blend-mode: overlay;
-      transform: translateY(-8%);
-      animation: staff-scroll 20s linear infinite;
-    }
+    .pearl {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      border: 1px solid $glass-edge;
+      border-radius: 120px;
+      padding: 16px 48px;
+      box-shadow: 0 0 40px rgba($accent-aqua, 0.3),
+        0 20px 40px rgba(0, 0, 0, 0.4);
+      position: relative;
+      overflow: hidden;
 
-    .title-wrap {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba($accent-lavender, 0.2),
+          transparent 70%
+        );
+        pointer-events: none;
+      }
 
       h1 {
         margin: 0;
-        font-size: 18px;
-        color: $accent-2;
-        letter-spacing: 0.4px;
-        font-weight: 900;
-        text-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
-        position: relative;
+        font-size: 2rem;
+        font-weight: 400;
+        background: linear-gradient(
+          135deg,
+          #ffffff,
+          $accent-lavender,
+          $accent-aqua
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        letter-spacing: 4px;
+        font-family: "Times New Roman", serif;
       }
 
-      .title-count {
-        color: rgba($text-main, 0.92);
-        font-size: 12px;
-        font-weight: 700;
-        margin-left: 6px;
+      .pearl-count {
+        margin-top: 8px;
+        font-size: 0.95rem;
+        color: rgba($text-light, 0.7);
+        span {
+          color: $accent-aqua;
+          font-weight: 600;
+          font-size: 1.2rem;
+          margin-right: 4px;
+        }
       }
+    }
 
-      .subtitle {
-        margin: 0;
-        margin-left: auto;
-        color: rgba($text-main, 0.94);
-        font-size: 13px;
-        font-weight: 600;
-        text-shadow: 0 1px 6px rgba($accent-1, 0.02);
+    .tendrils {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin: 8px 0 12px;
+
+      span {
+        width: 2px;
+        height: 30px;
+        background: linear-gradient(to bottom, $accent-aqua, transparent);
+        border-radius: 1px;
+        animation: tendrilWave 4s infinite alternate;
+        opacity: 0.7;
+
+        &:nth-child(1) {
+          height: 40px;
+          animation-delay: 0s;
+        }
+        &:nth-child(2) {
+          height: 25px;
+          animation-delay: 0.8s;
+        }
+        &:nth-child(3) {
+          height: 50px;
+          background: $accent-lavender;
+          animation-delay: 0.3s;
+        }
+        &:nth-child(4) {
+          height: 35px;
+          animation-delay: 1.2s;
+        }
+        &:nth-child(5) {
+          height: 45px;
+          animation-delay: 0.5s;
+        }
       }
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: rgba($text-light, 0.8);
+      font-style: italic;
+      font-weight: 300;
+      text-shadow: 0 2px 10px rgba($accent-aqua, 0.3);
+      max-width: 600px;
+      margin: 0 auto;
     }
   }
 
-  /* ---------- 留言列表 ---------- */
+  /* ===== 留言列表 ===== */
   .message-list {
-    z-index: 2;
     position: relative;
+    z-index: 5;
     flex: 1;
-    overflow-y: auto;
-    padding: 28px 20px 340px;
-    margin-top: 18px;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
 
     .message-list-inner {
-      max-width: 960px;
-      max-height: 80vh;
-      margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      position: relative;
-      z-index: 2;
-      overflow-y: auto;
+      gap: 24px;
     }
 
+    /* 骨架屏 */
     .skeleton-wrap {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 20px;
 
       .skeleton {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        padding: 12px;
-        background: linear-gradient(
-          180deg,
-          rgba(8, 6, 8, 0.28),
-          rgba(10, 6, 8, 0.22)
-        );
-        border-radius: 12px;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
-        border: 1px solid rgba($accent-1, 0.02);
-      }
+        height: 120px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 60px 60px 30px 30px;
+        border: 1px solid $glass-edge;
+        position: relative;
+        overflow: hidden;
 
-      .sk-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-        background: linear-gradient(90deg, $accent-1, $accent-2);
-      }
-
-      .sk-lines {
-        flex: 1;
-
-        .sk-line {
-          height: 10px;
-          border-radius: 6px;
+        .sk-glow {
+          position: absolute;
+          inset: 0;
           background: linear-gradient(
             90deg,
-            rgba(255, 255, 255, 0.03),
-            rgba(200, 200, 200, 0.02)
+            transparent,
+            rgba($accent-aqua, 0.1),
+            transparent
           );
-          margin-bottom: 8px;
-        }
-
-        .sk-line.short {
-          width: 40%;
+          animation: shimmer 2s infinite;
         }
       }
+    }
+
+    .messages-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 留言卡片 - 浮游生物造型 */
+    .message-card {
+      background: transparent;
+      perspective: 1000px;
+
+      .card-inner {
+        background: $card-bg;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        border: 1px solid $glass-edge;
+        border-radius: 40px 40px 30px 30px;
+        padding: 24px 28px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3),
+          0 0 0 1px rgba($accent-lavender, 0.1) inset;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: "";
+          position: absolute;
+          top: -10px;
+          left: 10%;
+          width: 80%;
+          height: 30px;
+          background: radial-gradient(
+            ellipse at center,
+            rgba($accent-aqua, 0.2),
+            transparent 70%
+          );
+          filter: blur(10px);
+          pointer-events: none;
+        }
+
+        &:hover {
+          transform: translateY(-4px) scale(1.01);
+          border-color: rgba($accent-aqua, 0.4);
+          box-shadow: 0 30px 60px rgba($accent-aqua, 0.2);
+        }
+      }
+
+      .message-header {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 16px;
+        position: relative;
+        z-index: 2;
+
+        .avatar {
+          position: relative;
+          width: 52px;
+          height: 52px;
+          border-radius: 40% 60% 40% 60%; /* 不规则水母形状 */
+          background: linear-gradient(
+            135deg,
+            $accent-lavender,
+            $accent-deep-blue
+          );
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          font-weight: 300;
+          color: white;
+          box-shadow: 0 0 20px rgba($accent-aqua, 0.5);
+          border: 1px solid rgba(white, 0.2);
+
+          .avatar-glow {
+            position: absolute;
+            inset: -5px;
+            border-radius: inherit;
+            background: radial-gradient(
+              circle at 30% 30%,
+              rgba($accent-aqua, 0.4),
+              transparent 70%
+            );
+            filter: blur(8px);
+            z-index: -1;
+          }
+        }
+
+        .header-text {
+          .message-name {
+            font-size: 1.2rem;
+            font-weight: 400;
+            color: $accent-aqua;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+          }
+          .message-time {
+            font-size: 0.8rem;
+            color: rgba($text-light, 0.5);
+            font-weight: 300;
+          }
+        }
+      }
+
+      .message-content {
+        font-size: 1.05rem;
+        line-height: 1.6;
+        margin: 0 0 12px 0;
+        color: rgba($text-light, 0.95);
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-weight: 300;
+        letter-spacing: 0.3px;
+        position: relative;
+        z-index: 2;
+        padding-left: 68px; // 与头像对齐
+      }
+
+      .card-footer {
+        height: 16px;
+        position: relative;
+        .ripple {
+          display: block;
+          width: 100%;
+          height: 2px;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            $accent-pink,
+            $accent-aqua,
+            transparent
+          );
+          opacity: 0.3;
+          border-radius: 2px;
+        }
+      }
+    }
+
+    /* 无限滚动哨兵 */
+    .sentinel {
+      height: 1px;
+      opacity: 0;
+    }
+
+    /* 加载更多指示器 */
+    .loading-more {
+      margin-bottom: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      color: rgba($accent-aqua, 0.7);
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+
+      .jelly-loader {
+        width: 24px;
+        height: 24px;
+        border: 2px solid rgba($accent-aqua, 0.2);
+        border-top-color: $accent-aqua;
+        border-radius: 50%;
+        animation: spin 1s infinite linear;
+      }
+    }
+
+    .no-more {
+      margin-bottom: 100px;
+      text-align: center;
+      padding: 20px;
+      color: rgba($text-light, 0.2);
+      font-style: italic;
+      font-size: 0.9rem;
     }
   }
 
-  /* ---------- 单条消息卡片（坎特蕾拉风） ---------- */
-  .message-card {
-    background: linear-gradient(
-      180deg,
-      rgba(6, 6, 8, 0.36),
-      rgba(8, 6, 10, 0.48)
-    );
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin: 6px auto;
-    width: calc(100% - 48px);
-    max-width: 960px;
-    border: 1px solid $card-border;
-    transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.32s,
-      border-color 0.32s;
-    transform-origin: center;
-    position: relative;
-    z-index: 3;
-    overflow: visible;
-    box-shadow: 0 14px 44px $soft-shadow, inset 0 1px 0 $inner-glow;
-
-    &:hover {
-      transform: translateY(-8px) scale(1.01);
-      box-shadow: 0 32px 96px rgba(0, 0, 0, 0.75);
-      border-color: rgba($accent-2, 0.08);
-      background: linear-gradient(
-        180deg,
-        rgba(8, 6, 10, 0.52),
-        rgba(6, 4, 8, 0.6)
-      );
-    }
-
-    .message-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 8px;
-
-      .left-meta {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-
-        .name-avatar {
-          width: 48px;
-          height: 48px;
-          border-radius: 10px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 900;
-          color: #0a0710;
-          background: linear-gradient(180deg, $accent-2 0%, $accent-1 60%);
-
-          box-shadow: inset 0 -6px 18px rgba(0, 0, 0, 0.35);
-          font-size: 16px;
-          flex-shrink: 0;
-          position: relative;
-
-          /* 头像旁的微血光（左下） */
-          &::after {
-            content: "";
-            position: absolute;
-            left: -6px;
-            bottom: -6px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: radial-gradient(
-              circle,
-              rgba($accent-2, 0.95) 0%,
-              rgba($accent-1, 0.7) 40%,
-              transparent 70%
-            );
-            filter: blur(2px);
-            opacity: 0.92;
-          }
-        }
-
-        .meta-texts {
-          .message-name {
-            font-size: 15px;
-            color: $accent-2;
-            font-weight: 800;
-            line-height: 1;
-            text-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-          }
-
-          .message-time {
-            font-size: 12px;
-            color: rgba($text-main, 0.78);
-            margin-top: 2px;
-          }
-        }
-      } /* left-meta end */
-
-      .shouan-icon {
-        display: inline-grid;
-        place-items: center;
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
-        cursor: pointer;
-        user-select: none;
-        position: relative;
-        z-index: 4;
-        background: linear-gradient(
-          180deg,
-          rgba(8, 6, 8, 0.94),
-          rgba(6, 4, 6, 0.98)
-        );
-        border: 1px solid $card-border;
-        box-shadow: 0 10px 36px rgba(0, 0, 0, 0.6), inset 0 1px 0 $inner-glow;
-        transition: transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1),
-          box-shadow 260ms, background 260ms;
-        will-change: transform, box-shadow, opacity;
-        animation: iconFloat 8s ease-in-out infinite;
-
-        svg {
-          width: 36px;
-          height: 36px;
-          display: block;
-          overflow: visible;
-          color: #b86be0;
-        }
-
-        &.active {
-          svg path {
-            animation: corePulse 2s ease-in-out infinite;
-          }
-        }
-      }
-
-      @keyframes iconFloat {
-        0% {
-          transform: translateY(0);
-        }
-        40% {
-          transform: translateY(-6px);
-        }
-        70% {
-          transform: translateY(-3px);
-        }
-        100% {
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes corePulse {
-        0% {
-          transform: scale(1);
-          filter: drop-shadow(0 6px 18px rgba($accent-1, 0.04));
-        }
-        50% {
-          transform: scale(1.06);
-          filter: drop-shadow(0 18px 46px rgba($accent-2, 0.08));
-        }
-        100% {
-          transform: scale(1);
-          filter: drop-shadow(0 6px 18px rgba($accent-1, 0.04));
-        }
-      }
-    } /* message-meta end */
-
-    .message-content {
-      font-size: 15px;
-      color: rgba($text-main, 0.96);
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin: 0;
-      padding-bottom: 2px;
-      letter-spacing: 0.2px;
-    }
-  } /* .message-card end */
-
-  /* ---------- 固定底部输入区（暗紫血色按钮） ---------- */
+  /* ===== 底部表单：珊瑚台 ===== */
   .message-form {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: 18px;
-    width: calc(100% - 32px);
+    bottom: 20px;
+    width: calc(100% - 40px);
     max-width: 960px;
-    background: linear-gradient(
-      180deg,
-      rgba(8, 6, 8, 0.92),
-      rgba(6, 4, 6, 0.98)
-    );
-    padding: 14px;
-    border-radius: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.85), inset 0 1px 0 $inner-glow;
-    z-index: 6;
-    border: 1px solid rgba($accent-2, 0.02);
-    will-change: transform, opacity;
+    z-index: 20;
+
+    .coral-base {
+      background: rgba($deep-bg, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 60px 60px 30px 30px;
+      border: 1px solid rgba($accent-aqua, 0.2);
+      border-bottom-width: 3px;
+      border-bottom-color: rgba($accent-aqua, 0.4);
+      box-shadow: 0 0 50px rgba($accent-aqua, 0.2);
+      padding: 24px 28px;
+      position: relative;
+    }
+
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
     input,
     textarea {
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba($accent-2, 0.03);
-      font-size: 14px;
-      outline: none;
-      transition: box-shadow 0.18s, border-color 0.18s, background 0.18s,
-        transform 0.12s;
-      background: linear-gradient(
-        180deg,
-        rgba(10, 10, 10, 0.7),
-        rgba(8, 6, 8, 0.78)
-      );
-      box-shadow: inset 0 -4px 10px rgba(0, 0, 0, 0.48);
-      color: $text-main;
-      resize: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-    }
+      width: 100%;
+      padding: 14px 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba($accent-aqua, 0.2);
+      border-radius: 40px;
+      color: $text-light;
+      font-size: 1rem;
+      transition: all 0.3s;
+      font-weight: 300;
 
-    input::placeholder,
-    textarea::placeholder {
-      color: rgba($text-main, 0.42);
-    }
+      &:focus {
+        outline: none;
+        border-color: $accent-aqua;
+        box-shadow: 0 0 25px rgba($accent-aqua, 0.3);
+        background: rgba(0, 0, 0, 0.5);
+      }
 
-    input:focus,
-    textarea:focus {
-      border-color: $accent-1;
-      box-shadow: 0 14px 42px rgba($accent-1, 0.06),
-        inset 0 -6px 12px rgba(0, 0, 0, 0.36);
-      background: linear-gradient(
-        180deg,
-        rgba(12, 8, 10, 0.76),
-        rgba(10, 6, 8, 0.78)
-      );
-      transform: translateY(-1px);
+      &::placeholder {
+        color: rgba($text-light, 0.3);
+        font-style: italic;
+      }
     }
 
     textarea {
-      min-height: 64px;
-      max-height: 220px;
-      line-height: 1.6;
+      min-height: 80px;
+      resize: none;
+      border-radius: 30px;
     }
 
-    .form-row {
+    .form-actions {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      align-items: center;
 
       .hint {
-        color: rgba($text-main, 0.86);
-        font-size: 13px;
         display: flex;
         align-items: center;
         gap: 8px;
+        color: rgba($text-light, 0.5);
+        font-size: 0.9rem;
 
         kbd {
-          background: rgba(8, 6, 8, 0.78);
-          border-radius: 6px;
-          padding: 3px 7px;
-          border: 1px solid rgba($accent-2, 0.02);
-          font-size: 12px;
-          box-shadow: inset 0 -2px 6px rgba(0, 0, 0, 0.28);
-          color: $accent-2;
-          font-weight: 700;
-          letter-spacing: 0.6px;
+          background: rgba($accent-deep-blue, 0.6);
+          padding: 4px 10px;
+          border-radius: 30px;
+          border: 1px solid rgba($accent-aqua, 0.3);
+          color: $accent-aqua;
+          font-family: monospace;
         }
       }
 
       button {
-        padding: 10px 18px;
-        background: linear-gradient(180deg, $accent-1 0%, $accent-2 60%);
-        color: #0a0710;
+        padding: 12px 36px;
+        background: linear-gradient(135deg, $accent-lavender, $accent-aqua);
         border: none;
-        border-radius: 12px;
+        border-radius: 40px;
+        color: $deep-bg;
+        font-weight: 500;
+        font-size: 1rem;
         cursor: pointer;
-        font-weight: 800;
-        box-shadow: 0 14px 48px rgba($accent-2, 0.06),
-          inset 0 1px 0 rgba(255, 255, 255, 0.02);
-        transition: transform 0.14s ease, box-shadow 0.14s ease,
-          opacity 0.14s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
+        transition: all 0.3s;
+        box-shadow: 0 0 20px rgba($accent-aqua, 0.4);
+        letter-spacing: 2px;
 
-        &::after {
-          content: "";
-          display: inline-block;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: radial-gradient(
-            circle at 40% 40%,
-            $accent-2 0%,
-            $accent-1 40%,
-            transparent 60%
-          );
-          box-shadow: 0 6px 18px rgba($accent-2, 0.06);
+        &:hover:not(:disabled) {
+          transform: translateY(-3px);
+          box-shadow: 0 0 35px rgba($accent-aqua, 0.7);
         }
 
-        &:hover {
-          transform: translateY(-3px) scale(1.02);
-          box-shadow: 0 22px 64px rgba($accent-2, 0.09);
-        }
-        &:active {
-          transform: translateY(-1px) scale(0.995);
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
         }
       }
-
-      button:disabled {
-        opacity: 0.52;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-        background: linear-gradient(
-          180deg,
-          rgba(10, 10, 10, 0.6),
-          rgba(8, 8, 8, 0.6)
-        );
-        color: rgba(220, 240, 235, 0.6);
-      }
-    }
-
-    &.pulse {
-      animation: formPulse 1200ms ease-in-out 1;
     }
   }
 
-  @keyframes formPulse {
+  /* 动画 */
+  @keyframes tendrilWave {
     0% {
-      transform: translateX(-50%) scale(1);
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.85);
-    }
-    40% {
-      transform: translateX(-50%) scale(1.01);
-      box-shadow: 0 36px 96px rgba($accent-2, 0.08);
+      transform: translateY(0) scaleY(1);
+      opacity: 0.5;
     }
     100% {
-      transform: translateX(-50%) scale(1);
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.85);
+      transform: translateY(-8px) scaleY(1.2);
+      opacity: 0.9;
     }
   }
 
-  /* 浮动音符（模板内可渲染若干 .floating-note） */
-  .floating-note {
-    position: absolute;
-    font-size: 14px;
-    color: $accent-2;
-    opacity: 0.95;
-    transform-origin: center;
-    animation: note-float 4.6s ease-in-out infinite;
-    filter: drop-shadow(0 8px 20px rgba($accent-2, 0.06));
-  }
-
-  @keyframes staff-scroll {
+  @keyframes tentacleWave {
     0% {
-      transform: translateY(-6%);
-    }
-    50% {
-      transform: translateY(6%);
+      transform: translateY(0) scaleY(1);
+      opacity: 0.4;
     }
     100% {
-      transform: translateY(-6%);
+      transform: translateY(-10px) scaleY(1.3);
+      opacity: 0.8;
     }
   }
-  @keyframes note-float {
+
+  @keyframes shimmer {
     0% {
-      transform: translateY(0) rotate(-6deg) scale(0.95);
-      opacity: 0.85;
-    }
-    50% {
-      transform: translateY(-12px) rotate(3deg) scale(1);
-      opacity: 1;
+      transform: translateX(-100%);
     }
     100% {
-      transform: translateY(0) rotate(-6deg) scale(0.95);
-      opacity: 0.85;
+      transform: translateX(100%);
     }
   }
 
-  /* ---------- 响应式：移动端收敛（保留你的逻辑） ---------- */
-  @media (max-width: 980px) {
-    padding-top: 90px;
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
 
-    .carousel1 {
+  /* 移动端适配 */
+  @media (max-width: 720px) {
+    padding: 80px 16px 200px;
+
+    .carousel-desktop {
       display: none;
     }
-    .carousel2 {
+    .carousel-mobile {
       display: block;
     }
 
     .board-header {
-      left: 12px;
-      transform: none;
-      width: calc(100% - 24px);
-    }
-
-    .message-list {
-      padding: 18px 12px 260px;
-      .message-list-inner {
-        gap: 12px;
+      .pearl {
+        padding: 12px 24px;
+        h1 {
+          font-size: 1.6rem;
+        }
+      }
+      .subtitle {
+        font-size: 0.9rem;
       }
     }
 
     .message-card {
-      width: calc(100% - 28px);
-      border-radius: 12px;
-      padding: 12px;
-      .name-avatar {
-        width: 44px;
-        height: 44px;
+      .card-inner {
+        padding: 18px 20px;
+      }
+      .message-content {
+        padding-left: 0;
       }
     }
 
     .message-form {
-      left: 12px;
-      transform: none;
-      width: calc(100% - 24px);
-      bottom: 12px;
-      padding: 12px;
+      .coral-base {
+        padding: 18px 20px;
+      }
+      .form-actions {
+        flex-direction: column;
+        gap: 12px;
+        button {
+          width: 100%;
+        }
+      }
     }
   }
 
-  /* 无障碍隐藏 */
   .sr-only {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
   }
 }
 </style>

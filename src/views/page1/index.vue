@@ -1,9 +1,30 @@
 <template>
-  <main class="home">
-    <canvas ref="canvasEl" class="rose-canvas" aria-hidden="true"></canvas>
+  <main class="cantarella-hall">
+    <!-- ===== 深海幻境背景层 ===== -->
+    <div class="abyss-backdrop">
+      <!-- 幽海漩涡 -->
+      <div class="swirl"></div>
+      <!-- 浮游水母群 (动态触须) -->
+      <div class="jellyfish-swarm">
+        <span class="jelly"></span><span class="jelly"></span
+        ><span class="jelly"></span> <span class="jelly"></span
+        ><span class="jelly"></span>
+      </div>
+      <!-- 上升气泡群 -->
+      <div class="bubble-field">
+        <span class="bubble"></span><span class="bubble"></span
+        ><span class="bubble"></span> <span class="bubble"></span
+        ><span class="bubble"></span>
+      </div>
+      <!-- 极淡的“毒雾”弥散 -->
+      <div class="venom-mist"></div>
+    </div>
 
-    <!-- 背景轮播（两组用于桌面/移动不同裁切） -->
-    <div class="carousel carousel1" aria-hidden="true">
+    <!-- ===== 画布：水母洋伞粒子 ===== -->
+    <canvas ref="canvasEl" class="jelly-canvas" aria-hidden="true"></canvas>
+
+    <!-- ===== 背景轮播 (两组用于响应式裁切) ===== -->
+    <div class="carousel carousel-deep" aria-hidden="true">
       <img
         v-for="(src, idx) in randomFive"
         :key="idx"
@@ -12,7 +33,7 @@
         :class="{ active: idx === currentIndex }"
       />
     </div>
-    <div class="carousel carousel2" aria-hidden="true">
+    <div class="carousel carousel-shallows" aria-hidden="true">
       <img
         v-for="(src, idx) in randomFive2"
         :key="idx"
@@ -22,93 +43,201 @@
       />
     </div>
 
-    <section class="center" role="main">
-      <h1 class="title">绝世好女人 · 坎特蕾拉</h1>
-
-      <div class="subtitle" aria-live="polite">
-        <span class="typed">{{ typed }}</span
-        ><span class="cursor" aria-hidden="true"></span>
+    <!-- ===== 中央圣所：家主絮语 ===== -->
+    <section class="sanctum">
+      <!-- 珊瑚骨洋伞 装饰 (动态旋转) -->
+      <div class="umbrella-decoration">
+        <span class="umbrella-icon"
+          ><img src="@/assets/violet.png" alt=""
+        /></span>
+        <span class="tentacles"></span>
       </div>
+
+      <h1 class="title">
+        <span class="title-line">翡萨烈家主</span>
+        <span class="title-glow">坎特蕾拉</span>
+      </h1>
+
+      <!-- 幻梦絮语·打字机 (取自角色台词/背景) -->
+      <div class="dream-words" aria-live="polite">
+        <span class="typed">{{ typed }}</span>
+        <span class="cursor" aria-hidden="true"></span>
+      </div>
+
+      <!-- 低语波纹装饰 -->
+      <div class="whisper-ripple"></div>
     </section>
 
-    <footer
-      class="shore-footer-simple"
-      role="contentinfo"
-      aria-label="页面页脚"
-    >
-      <div class="inner container">
-        <div class="center">
-          <div class="slogan">轻轻合上这幻梦之书，心中涟漪仍为你留存</div>
-          <div class="meta">
-            © <span>{{ year }}</span> 坎特蕾拉电子设定集 · 制作：霜落天亦
-          </div>
+    <!-- ===== 梦涯页脚 ===== -->
+    <footer class="dreamshore-footer">
+      <div class="footer-inner">
+        <div class="footer-slogan">以梦为丝，以海为镜，编织真实的幻境</div>
+        <div class="footer-meta">
+          © {{ year }} 坎特蕾拉电子设定集 · 深海秘藏
         </div>
+
+        <!-- 优化后的群号容器：秘药瓶样式 -->
+        <a
+          href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=RTN2gv0Rt17exZfET-WJ-8fRBJN-Atfg&authKey=PrOTvT5PfxE54V4qsgRKukiTeMl2nX3ZonMOoJDokmQ1d3U8CoWNB3rx972nAZry&noverify=0&group_code=629760313"
+          target="_blank"
+        >
+          <div class="footer-group">
+            <span class="group-icon">⚱️</span>
+            <span class="group-text">点击跳转家主同好QQ群:</span>
+            <span class="group-number">629760313</span>
+            <!-- 瓶身光晕装饰 -->
+            <span class="group-glow"></span>
+            <!-- 瓶底触须装饰 -->
+            <span class="group-tentacles"></span></div
+        ></a>
       </div>
+
+      <!-- 底部水母触须（增强） -->
+      <div class="footer-tentacles"></div>
     </footer>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import violet from "@/assets/violet.png"; // 若希望更贴合风格，可替换为“贝壳/羽毛/萤光点”贴图
+
 const year = new Date().getFullYear();
+
+// ========== Canvas 水母粒子 (替代原玫瑰粒子) ==========
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 let ctx: CanvasRenderingContext2D;
 let animationId = 0;
 let lastTime = 0;
 let elapsed = 0;
 
-interface Rose {
+interface JellyParticle {
   baseX: number;
   y: number;
-  size: number;
+  size: number; // 伞盖大小
   speed: number;
-  swayAmp: number;
+  swayAmp: number; // 水平摆动幅度
   swayFreq: number;
   phase: number;
-  angle: number;
+  angle: number; // 自身旋转
   angularSpeed: number;
+  tentaclePhase: number; // 触须动画相位
+  type: "jelly" | "droplet"; // 水母 或 毒液滴
 }
 
-const roses: Rose[] = [];
-const ROSE_COUNT_DESKTOP = 18;
-const ROSE_COUNT_MOBILE = 6;
-const ROSE_IMG = new Image();
-ROSE_IMG.src = violet;
+const particles: JellyParticle[] = [];
+const PARTICLE_COUNT_DESKTOP = 24;
+const PARTICLE_COUNT_MOBILE = 10;
 
-function initRoses(count: number) {
-  roses.length = 0;
+// 绘制水母 (简易风格)
+function drawJelly(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  angle: number,
+  phase: number,
+  alpha: number
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.globalAlpha = alpha * 0.7;
+
+  // 伞盖 (半透明椭圆, 紫蓝渐变)
+  const gradient = ctx.createRadialGradient(
+    0,
+    -size * 0.1,
+    0,
+    0,
+    0,
+    size * 0.6
+  );
+  gradient.addColorStop(0, "rgba(200, 180, 255, 0.9)");
+  gradient.addColorStop(0.5, "rgba(90, 200, 250, 0.5)");
+  gradient.addColorStop(1, "rgba(40, 20, 70, 0.2)");
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.ellipse(0, -size * 0.1, size * 0.4, size * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 触须 (多条曲线)
+  ctx.strokeStyle = "rgba(200, 220, 255, 0.5)";
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    const offset = (i - 2) * size * 0.15;
+    const t = phase + i * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(offset, size * 0.1);
+    ctx.quadraticCurveTo(
+      offset + Math.sin(t) * size * 0.2,
+      size * 0.4,
+      offset + Math.sin(t * 1.3) * size * 0.3,
+      size * 0.8
+    );
+    ctx.strokeStyle = `rgba(160, 200, 255, ${0.3 + Math.sin(t) * 0.1})`;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// 绘制毒液滴 (幻觉毒)
+function drawDroplet(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  alpha: number
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.globalAlpha = alpha * 0.5;
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+  grad.addColorStop(0, "#ff6b9d");
+  grad.addColorStop(0.7, "#9d4edd");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function initParticles(count: number) {
+  particles.length = 0;
   const canvas = canvasEl.value!;
   const w = canvas.width / (window.devicePixelRatio || 1);
   const h = canvas.height / (window.devicePixelRatio || 1);
 
   for (let i = 0; i < count; i++) {
-    const baseX = Math.random() * w;
-    roses.push({
-      baseX,
+    const type = Math.random() > 0.7 ? "droplet" : "jelly"; // 约30%为毒液滴
+    particles.push({
+      baseX: Math.random() * w,
       y: Math.random() * -h,
-      size: 28 + Math.random() * 48, // 稍微精简尺寸
-      speed: 12 + Math.random() * 36, // 速度更缓
-      swayAmp: 12 + Math.random() * 26,
-      swayFreq: 0.15 + Math.random() * 0.7,
+      size: type === "jelly" ? 20 + Math.random() * 50 : 8 + Math.random() * 18,
+      speed: 8 + Math.random() * 30,
+      swayAmp:
+        type === "jelly" ? 15 + Math.random() * 30 : 5 + Math.random() * 10,
+      swayFreq: 0.1 + Math.random() * 0.6,
       phase: Math.random() * Math.PI * 2,
       angle: Math.random() * Math.PI * 2,
       angularSpeed: (Math.random() - 0.5) * 1.2,
+      tentaclePhase: Math.random() * 10,
+      type,
     });
   }
   elapsed = 0;
 }
 
-let resizeTimeout: number;
+let resizeTimer: number;
 function resizeCanvas() {
-  window.clearTimeout(resizeTimeout);
-  resizeTimeout = window.setTimeout(() => {
+  window.clearTimeout(resizeTimer);
+  resizeTimer = window.setTimeout(() => {
     cancelAnimationFrame(animationId);
     const canvas = canvasEl.value!;
     const parent = canvas.parentElement!;
     const dpr = window.devicePixelRatio || 1;
     const w = parent.clientWidth;
-    const h = Math.max(parent.clientHeight, 420); // 给个最小高度，避免太窄时粒子不明显
+    const h = Math.max(parent.clientHeight, 500);
 
     canvas.style.width = w + "px";
     canvas.style.height = h + "px";
@@ -119,7 +248,7 @@ function resizeCanvas() {
     ctx.scale(dpr, dpr);
 
     const isMobile = w < 768;
-    initRoses(isMobile ? ROSE_COUNT_MOBILE : ROSE_COUNT_DESKTOP);
+    initParticles(isMobile ? PARTICLE_COUNT_MOBILE : PARTICLE_COUNT_DESKTOP);
     lastTime = 0;
     animationId = requestAnimationFrame(tickCanvas);
   }, 160);
@@ -137,64 +266,46 @@ function tickCanvas(now: number) {
 
   ctx.clearRect(0, 0, w, h);
 
-  // 轻微整体雾层，增强深度（透明度低，避免影响可读性）
-  ctx.fillStyle = "rgba(2,8,14,0.08)";
+  // 极淡的深海底色 (保持通透)
+  ctx.fillStyle = "rgba(4, 6, 18, 0.1)";
   ctx.fillRect(0, 0, w, h);
 
-  roses.forEach((r) => {
-    r.y += r.speed * dt;
-    const sway = r.swayAmp * Math.sin(r.phase + elapsed * r.swayFreq);
-    const x = r.baseX + sway;
-    r.angle += r.angularSpeed * dt;
+  particles.forEach((p) => {
+    p.y += p.speed * dt;
+    const sway = p.swayAmp * Math.sin(p.phase + elapsed * p.swayFreq);
+    const x = p.baseX + sway;
+    p.angle += p.angularSpeed * dt;
+    p.tentaclePhase += dt;
 
-    if (r.y > h + r.size) {
-      r.y = -r.size * 0.6;
-      r.baseX = Math.random() * w;
-      r.phase = Math.random() * Math.PI * 2;
+    if (p.y > h + p.size * 2) {
+      p.y = -p.size * 0.8;
+      p.baseX = Math.random() * w;
+      p.phase = Math.random() * Math.PI * 2;
     }
 
-    if (x > w + r.size || x < -r.size) return;
+    const alpha = Math.max(0, Math.min(1, 1 - (p.y / h) * 0.7 + 0.2));
 
-    // 计算透明度：越远看上去越淡
-    const alpha = Math.max(0, Math.min(1, 1 - (r.y / h) * 0.6));
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(x, r.y);
-    ctx.rotate(r.angle);
-
-    if (ROSE_IMG && ROSE_IMG.complete && ROSE_IMG.naturalWidth > 0) {
-      // 使用图片绘制，但加上一层冷色调叠加（globalCompositeOperation 简单处理）
-      ctx.drawImage(ROSE_IMG, -r.size / 2, -r.size / 2, r.size, r.size);
-
-      // 轻微冷光叠加，提升风格一致性
-      ctx.globalCompositeOperation = "lighter";
-      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r.size);
-      grad.addColorStop(0, `rgba(79,233,223,${0.08 * alpha})`);
-      grad.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = grad;
-      ctx.fillRect(-r.size / 2, -r.size / 2, r.size, r.size);
-      ctx.globalCompositeOperation = "source-over";
+    if (p.type === "jelly") {
+      drawJelly(ctx, x, p.y, p.size, p.angle, p.tentaclePhase, alpha);
+    } else {
+      drawDroplet(ctx, x, p.y, p.size, alpha);
     }
-
-    ctx.restore();
   });
 
   animationId = requestAnimationFrame(tickCanvas);
 }
 
-// ========== 打字机文案 ==========
-// 适合长离风格的副标题（偏长句，已为打字器准备）
+// ========== 打字机文案 (取自角色故事/台词) ==========
 const lines = [
-  "以梦为丝，以海为镜，编织真实的幻境",
-  "翡萨烈的幽紫魅影，沉沦于温柔陷阱",
-  "海域低语间，读懂你心底的每一道涟漪",
-  "是救赎的引路人，还是沉沦的编织者？",
-  "在幻梦与真实的边界，静候你的抉择",
-  "优雅仅是表象，危险藏于温柔的涡流",
-  "无需言语，海域已诉说你所有的秘密",
-  "迷梦深处，探寻蜃境中的真实自我",
-  "如水母般优雅，如潮汐般不可抗拒",
+  "神秘、高贵、美艳、剧毒……",
+  "我居于山巅的冠冕，而山崖间流淌着的，都是由我编织的幻梦。",
+  "是「毒」，还是「药」，取决于你的用法哦……",
+  "当你进入我的海域，周身浮现的波纹，已经将一切都告诉了我。",
+  "虚假的幻术，也可以促成美妙的真实",
+  "花园里那些可爱的小东西们，由我亲手采摘、筛选、调配……",
+  "酿成一壶壶甜蜜的汁液，温柔的香气唤来美梦。",
+  "我喜欢你凝视我的样子。原本深邃的幽海，也变得清澈见底。",
+  "微光穿透深海，映照出隐现于汹涌浪潮之间的温柔呢喃……",
 ];
 
 const typed = ref("");
@@ -203,9 +314,9 @@ let charIndex = 0;
 let deleting = false;
 let timer: number | null = null;
 
-const TYPING = 120;
+const TYPING = 100;
 const DELETING = 40;
-const PAUSE = 1200;
+const PAUSE = 2000;
 
 function tick() {
   const cur = lines[lineIndex];
@@ -256,125 +367,202 @@ function shuffle<T>(arr: T[]): T[] {
 }
 const randomFive = ref<string[]>(shuffle(allSrcs).slice(0, 5));
 const randomFive2 = ref<string[]>(shuffle(allSrcs2).slice(0, 5));
-
 const currentIndex = ref(0);
-let Imgtimer: number | undefined;
+let imgTimer: number | undefined;
 
 onMounted(() => {
   timer = window.setTimeout(tick, 420);
-
-  Imgtimer = window.setInterval(() => {
+  imgTimer = window.setInterval(() => {
     currentIndex.value =
       (currentIndex.value + 1) % Math.max(1, randomFive.value.length);
-  }, 5200);
+  }, 5800);
 
   const canvas = canvasEl.value!;
   ctx = canvas.getContext("2d")!;
-
-  // 当图片加载或资源就绪后调整 canvas 大小并启动渲染
-  ROSE_IMG.onload = () => {
-    resizeCanvas();
-  };
-  // 如果图片已经加载完（缓存情况），也要触发 init
-  if (ROSE_IMG.complete && ROSE_IMG.naturalWidth > 0) {
-    resizeCanvas();
-  }
-
+  resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 });
 
 onBeforeUnmount(() => {
-  if (Imgtimer) clearInterval(Imgtimer);
+  if (imgTimer) clearInterval(imgTimer);
   if (timer) window.clearTimeout(timer);
-
   cancelAnimationFrame(animationId);
   window.removeEventListener("resize", resizeCanvas);
 });
 </script>
 
-<style lang="scss" scoped>
-/* 坎特蕾拉风格 - 紫蓝海感（水母/幻海）+ 毒药/治疗双面高光 */
-$bg-deep: #04060a; // 深海夜色底
-$deep-2: #0b0f1a; // 次深底用于渐变
-$accent-1: #6f5ce6; // 暗紫主光（冷雅）
-$accent-2: #5fe0ff; // 冷海蓝高光（湿光感）
-$venom: #ff7aa3; // 毒色点缀（保留少量用于对比）
-$heal-glow: rgba(95, 224, 255, 0.12); // 治愈光晕（低饱和）
-$muted-text: #eae9ee; // 文字
-$glass: rgba(95, 224, 255, 0.04);
-$bubble: rgba(95, 224, 255, 0.06);
+<style scoped lang="scss">
+// 字体：优雅衬线 + 手写点缀
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Qwitcher+Grypen:wght@400;700&display=swap");
 
-.home {
+.cantarella-hall {
+  --deep-violet: #0f0722;
+  --venom-pink: #ff6b9d;
+  --jelly-blue: #5ac8fa;
+  --abyss-glow: #8a6de9;
+  --pearl-mist: #f0eaf8;
+  --mist-transparent: rgba(90, 200, 250, 0.03);
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: radial-gradient(
-      800px 240px at 20% 10%,
-      rgba(95, 224, 255, 0.02),
-      transparent 8%
-    ),
-    linear-gradient(180deg, $bg-deep 0%, $deep-2 76%);
+  background: radial-gradient(ellipse at 30% 40%, #1d1238, #030014 90%);
   position: relative;
   overflow: hidden;
-  color: $muted-text;
-  font-family: Inter, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei",
-    sans-serif;
+  color: var(--pearl-mist);
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
 
-  /* 背景元素：水波纹 + 低透明五线谱（可选） */
-  .rose-canvas {
+  // 深海背景层 (所有动态装饰)
+  .abyss-backdrop {
     position: absolute;
     inset: 0;
-    z-index: 1;
     pointer-events: none;
+    z-index: 1;
 
-    /* 轻微浮动的水纹层（伪元素）*/
-    &::before {
-      content: "";
+    .swirl {
       position: absolute;
-      inset: -10% -20%;
+      top: -20%;
+      left: -10%;
+      width: 70%;
+      height: 140%;
       background: radial-gradient(
-          circle at 30% 10%,
-          rgba(111, 92, 230, 0.03),
-          transparent 10%
-        ),
-        radial-gradient(
-          circle at 80% 70%,
-          rgba(95, 224, 255, 0.02),
-          transparent 8%
+        circle at 30% 50%,
+        rgba(90, 200, 250, 0.06) 0%,
+        transparent 60%
+      );
+      filter: blur(50px);
+      animation: swirlMove 25s infinite alternate;
+    }
+
+    .jellyfish-swarm {
+      .jelly {
+        position: absolute;
+        background: radial-gradient(
+          circle at 30% 40%,
+          rgba(200, 150, 255, 0.1),
+          transparent 70%
         );
-      animation: slow-drift 18s linear infinite;
+        border-radius: 60% 40% 50% 30% / 40% 50% 40% 50%;
+        filter: blur(16px);
+        animation: floatJelly 22s infinite alternate;
+        &:nth-child(1) {
+          top: 15%;
+          left: 5%;
+          width: 150px;
+          height: 180px;
+          background: rgba(255, 107, 157, 0.08);
+          animation-duration: 28s;
+        }
+        &:nth-child(2) {
+          bottom: 5%;
+          right: 2%;
+          width: 220px;
+          height: 260px;
+          background: rgba(90, 200, 250, 0.06);
+          animation-duration: 32s;
+        }
+        &:nth-child(3) {
+          top: 40%;
+          right: 15%;
+          width: 100px;
+          height: 120px;
+          background: rgba(200, 130, 250, 0.1);
+          animation-duration: 18s;
+        }
+        &:nth-child(4) {
+          bottom: 20%;
+          left: 20%;
+          width: 80px;
+          height: 100px;
+          background: rgba(255, 180, 200, 0.07);
+          animation-duration: 20s;
+        }
+        &:nth-child(5) {
+          top: 70%;
+          left: 40%;
+          width: 60px;
+          height: 80px;
+          background: rgba(140, 220, 255, 0.1);
+          animation-duration: 15s;
+        }
+      }
+    }
+
+    .bubble-field {
+      .bubble {
+        position: absolute;
+        bottom: -20px;
+        width: 10px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 50%;
+        filter: blur(3px);
+        animation: bubbleUp 10s infinite;
+        &:nth-child(1) {
+          left: 15%;
+          width: 18px;
+          height: 18px;
+          animation-duration: 9s;
+        }
+        &:nth-child(2) {
+          left: 35%;
+          width: 12px;
+          height: 12px;
+          animation-duration: 12s;
+          animation-delay: 2s;
+        }
+        &:nth-child(3) {
+          left: 55%;
+          width: 22px;
+          height: 22px;
+          animation-duration: 7s;
+          animation-delay: 1s;
+        }
+        &:nth-child(4) {
+          left: 75%;
+          width: 14px;
+          height: 14px;
+          animation-duration: 11s;
+          animation-delay: 3s;
+        }
+        &:nth-child(5) {
+          left: 90%;
+          width: 16px;
+          height: 16px;
+          animation-duration: 8s;
+          animation-delay: 0.5s;
+        }
+      }
+    }
+
+    .venom-mist {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at 70% 30%,
+        rgba(255, 107, 157, 0.02),
+        transparent 50%
+      );
       mix-blend-mode: screen;
       pointer-events: none;
     }
   }
 
-  /* 轮播区：图像做淡入 + 加水感滤镜 */
+  // Canvas 粒子层
+  .jelly-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  // 轮播背景
   .carousel {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      /* 细线纹理模拟轻微梦谱/五线（非常低透明） */
-      background-image: repeating-linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.01) 0px,
-        rgba(255, 255, 255, 0.01) 1px,
-        transparent 1px,
-        transparent 18px
-      );
-      opacity: 0.06;
-      mix-blend-mode: overlay;
-      z-index: 2;
-      transform: translateY(-4%);
-      animation: staff-scroll 16s linear infinite;
-      pointer-events: none;
-    }
 
     .carousel-image {
       position: absolute;
@@ -382,206 +570,430 @@ $bubble: rgba(95, 224, 255, 0.06);
       height: 100%;
       object-fit: cover;
       opacity: 0;
-      transition: opacity 900ms ease, transform 10s linear;
-      filter: blur(0.6px) saturate(0.78) contrast(0.95) brightness(0.92);
-      transform: scale(1.02);
-
+      transition: opacity 1.8s ease;
+      filter: saturate(1) brightness(0.6) contrast(1.1);
       &.active {
         opacity: 1;
-        transform: scale(1);
       }
     }
   }
-  .carousel2 {
+  .carousel-shallows {
     display: none;
   }
 
-  .center {
+  // 中央圣所
+  .sanctum {
     position: relative;
-    z-index: 4;
+    z-index: 5;
     flex: 1 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 40px 20px;
-    gap: 10px;
+    padding: 40px 24px;
+    gap: 24px;
 
-    /* 主标题：紫→海蓝渐变文字 + 水母触须光影伪元素 */
-    .title {
-      font-size: 4rem;
-      font-weight: 800;
-      margin: 0;
-      line-height: 1;
-      background: linear-gradient(90deg, $accent-1 0%, $accent-2 72%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      color: $muted-text;
-      letter-spacing: 0.2px;
-
+    .umbrella-decoration {
       position: relative;
-
- 
-
-      /* 左下方水母触须影（更梦幻） */
-      &::before {
-        content: "";
+      margin-bottom: 10px;
+      .umbrella-icon {
+        font-size: 5rem;
+        line-height: 1;
+        color: var(--jelly-blue);
+        text-shadow: 0 0 30px var(--venom-pink), 0 0 60px #b282ff;
+        filter: drop-shadow(0 10px 20px #00000080);
+        transform: rotate(-8deg);
+        animation: umbrellaFloat 6s ease-in-out infinite;
+        display: inline-block;
+        img {
+          width: 120px;
+        }
+      }
+      .tentacles {
         position: absolute;
-        left: -6%;
-        bottom: -30%;
-        width: 160%;
-        height: 140%;
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 60px;
         background: radial-gradient(
-            ellipse at 40% 20%,
-            rgba($accent-2, 0.04),
-            transparent 8%
-          ),
-          linear-gradient(90deg, transparent, rgba($accent-1, 0.02));
-        pointer-events: none;
-        mix-blend-mode: screen;
+          ellipse at 50% 0%,
+          rgba(90, 200, 250, 0.3),
+          transparent 70%
+        );
         filter: blur(12px);
-        animation: tentacle-sway 10s ease-in-out infinite;
+        animation: tentacleWave 4s infinite alternate;
       }
     }
 
-    .subtitle {
-      font-size: 1.9rem;
-      min-height: 1.6em;
-      color: rgba($muted-text, 0.94);
+    .title {
+      font-family: "Playfair Display", serif;
+      font-weight: 700;
+      margin: 0;
+      .title-line {
+        font-size: 2rem;
+        letter-spacing: 0.3em;
+        color: rgba(255, 255, 255, 0.7);
+        display: block;
+        font-style: italic;
+        text-shadow: 0 0 20px var(--jelly-blue);
+      }
+      .title-glow {
+        font-size: 5rem;
+        background: linear-gradient(
+          145deg,
+          #fff,
+          var(--jelly-blue),
+          var(--venom-pink)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 40px rgba(255, 107, 157, 0.5);
+        line-height: 1.2;
+      }
+    }
+
+    .dream-words {
+      font-size: 2.2rem;
+      min-height: 3rem;
+      color: rgba(255, 255, 255, 0.9);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      font-family: "Dancing Script", "Segoe Script", "Brush Script MT", cursive;
+      gap: 12px;
+      font-family: "Qwitcher Grypen", cursive;
       font-weight: 500;
-      letter-spacing: 0.1em; // 增加字母间距增强手写感
-    
+      max-width: 800px;
+      text-shadow: 0 0 30px var(--jelly-blue);
       .typed {
         display: inline-block;
-        font-weight: 600;
       }
-
       .cursor {
-        width: 12px;
-        height: 1.05em;
-        margin-left: 6px;
-        background: linear-gradient(180deg, $accent-2, $accent-1);
+        width: 4px;
+        height: 2.4rem;
+        background: linear-gradient(
+          180deg,
+          var(--jelly-blue),
+          var(--venom-pink)
+        );
         border-radius: 2px;
         animation: blink 1s steps(1) infinite;
-        transform: translateY(2px);
-        filter: drop-shadow(0 6px 16px rgba($accent-2, 0.06));
+        filter: drop-shadow(0 0 16px cyan);
       }
     }
 
-    /* 小范围的治愈光晕（点击/hover 可触发更强光） */
-    &.healing {
-      &::after {
-        content: "";
-        position: absolute;
-        inset: -6%;
-        pointer-events: none;
-        background: radial-gradient(
-          circle at 50% 50%,
-          $heal-glow 0%,
-          transparent 40%
-        );
-        mix-blend-mode: screen;
-        opacity: 0.9;
-        transition: opacity 360ms ease;
-      }
+    .whisper-ripple {
+      width: 300px;
+      height: 60px;
+      background: radial-gradient(
+        ellipse at 50% 0%,
+        rgba(90, 200, 250, 0.1),
+        transparent 70%
+      );
+      filter: blur(20px);
+      margin-top: 20px;
     }
   }
 
-  /* 页脚：深海玻璃 + 细微海蓝边 */
-  .shore-footer-simple {
+  // 页脚
+  .dreamshore-footer {
+    position: relative;
+    z-index: 5;
     background: linear-gradient(
       180deg,
-      rgba(6, 6, 10, 0.78),
-      rgba(8, 6, 12, 0.94)
+      rgba(10, 5, 20, 0.7),
+      rgba(2, 0, 8, 0.9)
     );
-    border-top: 1px solid rgba($accent-2, 0.03);
-    color: $muted-text;
-    font-size: 13px;
-    position: relative;
-    overflow: visible;
+    border-top: 1px solid rgba(255, 107, 157, 0.2);
+    padding: 24px 0 20px;
+    backdrop-filter: blur(4px);
+    overflow: hidden; /* 防止触须溢出造成滚动条 */
 
-    .inner.container {
+    .footer-inner {
       width: min(1100px, 94%);
       margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .center {
       text-align: center;
-      flex: 1 1 auto;
+      position: relative;
+      z-index: 2;
+    }
 
-      .slogan {
-        background: linear-gradient(90deg, $accent-1 0%, $accent-2 60%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        display: inline-block;
-        line-height: 1;
-        font-size: 14px;
-        letter-spacing: 0.3px;
-        text-shadow: 0 6px 20px rgba(6, 4, 8, 0.6);
+    .footer-slogan {
+      font-size: 1.2rem;
+      background: linear-gradient(90deg, var(--jelly-blue), var(--venom-pink));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.1rem;
+      margin-bottom: 8px;
+    }
+
+    .footer-meta {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+
+    /* 群号容器 - 秘药瓶风格 */
+    .footer-group {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(2, 6, 20, 0.5);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-edge);
+      border-radius: 60px;
+      padding: 8px 24px 8px 20px;
+      margin: 0 auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(122, 226, 255, 0.1) inset;
+      transition: all 0.3s ease;
+
+      /* 悬停时微微发光 */
+      &:hover {
+        border-color: var(--jelly-blue);
+        box-shadow: 0 10px 30px rgba(122, 226, 255, 0.2),
+          0 0 20px rgba(122, 226, 255, 0.2);
+        transform: translateY(-2px);
       }
 
-      .meta {
-        color: rgba($muted-text, 0.66);
-        margin-top: 6px;
-        font-size: 12px;
+      .group-icon {
+        font-size: 1.4rem;
+        filter: drop-shadow(0 0 8px var(--jelly-blue));
+        transition: filter 0.3s;
+      }
+
+      .group-text {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+      }
+
+      .group-number {
+        font-size: 1.2rem;
+        font-weight: 600;
+        background: linear-gradient(
+          135deg,
+          var(--jelly-blue),
+          var(--venom-pink)
+        );
+        font-family: "Courier New", Courier, monospace;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 10px rgba(122, 226, 255, 0.3);
+        margin-left: 4px;
+      }
+
+      /* 瓶身内部光晕 */
+      .group-glow {
+        position: absolute;
+        inset: 0;
+        border-radius: 60px;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(122, 226, 255, 0.1),
+          transparent 70%
+        );
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      &:hover .group-glow {
+        opacity: 1;
+      }
+
+      /* 瓶底触须（与页脚触须呼应） */
+      .group-tentacles {
+        position: absolute;
+        bottom: -10px;
+        left: 20%;
+        width: 60%;
+        height: 12px;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(122, 226, 255, 0.3),
+          transparent 70%
+        );
+        filter: blur(4px);
+        border-radius: 50%;
+        transition: all 0.3s;
+      }
+
+      &:hover .group-tentacles {
+        height: 16px;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(122, 226, 255, 0.5),
+          transparent 70%
+        );
+      }
+    }
+
+    /* 底部水母触须（增强） */
+    .footer-tentacles {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 30px,
+        rgba(122, 226, 255, 0.15) 30px,
+        rgba(255, 179, 198, 0.1) 60px
+      );
+      filter: blur(8px);
+      pointer-events: none;
+      animation: tentacle-wave 8s infinite alternate;
+    }
+
+    /* 触须浮动动画 */
+    @keyframes tentacle-wave {
+      0% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
+      50% {
+        opacity: 0.7;
+        transform: translateY(-4px);
+      }
+      100% {
+        opacity: 0.3;
+        transform: translateY(0);
+      }
+    }
+  }
+
+  /* 响应式：移动端调整群号容器 */
+  @media (max-width: 720px) {
+    .dreamshore-footer .footer-group {
+      flex-wrap: wrap;
+      padding: 8px 16px;
+      gap: 6px;
+      max-width: 90%;
+
+      .group-text,
+      .group-number {
+        font-size: 0.95rem;
+      }
+      .group-icon {
+        font-size: 1.2rem;
       }
     }
   }
 }
 
-/* 单独浮动音符（可插入 .floating-note 在 DOM）*/
-.floating-note {
-  position: absolute;
-  font-size: 14px;
-  color: $accent-2;
-  opacity: 0.95;
-  transform-origin: center;
-  animation: note-float 4.8s ease-in-out infinite;
-  filter: drop-shadow(0 6px 18px rgba($accent-2, 0.06));
+// 响应式
+@media (max-width: 768px) {
+  .carousel-deep {
+    display: none;
+  }
+  .carousel-shallows {
+    display: block;
+  }
+  .sanctum {
+    .title {
+      .title-line {
+        font-size: 1.5rem;
+      }
+      .title-glow {
+        font-size: 3.2rem;
+      }
+    }
+    .dream-words {
+      font-size: 1.6rem;
+    }
+  }
 }
 
-/* 关键帧：水波/触须漂动、谱线滚动、气泡上升、音符浮动 */
-@keyframes staff-scroll {
+// 动画
+@keyframes swirlMove {
   0% {
-    transform: translateY(-6%);
-    opacity: 0.92;
-  }
-  50% {
-    transform: translateY(6%);
-    opacity: 0.98;
+    transform: rotate(0deg) scale(1);
+    opacity: 0.3;
   }
   100% {
-    transform: translateY(-6%);
-    opacity: 0.92;
+    transform: rotate(12deg) scale(1.3);
+    opacity: 0.6;
   }
 }
-
-@keyframes note-float {
+@keyframes floatJelly {
   0% {
-    transform: translateY(0) rotate(-4deg) scale(0.96);
-    opacity: 0.86;
-  }
-  50% {
-    transform: translateY(-10px) rotate(2deg) scale(1.02);
-    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 0.3;
   }
   100% {
-    transform: translateY(0) rotate(-4deg) scale(0.96);
-    opacity: 0.86;
+    transform: translate(40px, -30px) rotate(12deg) scale(1.1);
+    opacity: 0.6;
   }
 }
-
+@keyframes bubbleUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-150px) scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes bubbleUpSmall {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-40px) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes staffScroll {
+  0% {
+    transform: translateY(-5%);
+  }
+  100% {
+    transform: translateY(5%);
+  }
+}
+@keyframes umbrellaFloat {
+  0% {
+    transform: rotate(-8deg) scale(1);
+  }
+  50% {
+    transform: rotate(-2deg) scale(1.05);
+  }
+  100% {
+    transform: rotate(-8deg) scale(1);
+  }
+}
+@keyframes tentacleWave {
+  0% {
+    opacity: 0.2;
+    filter: blur(12px);
+  }
+  100% {
+    opacity: 0.6;
+    filter: blur(20px);
+  }
+}
+@keyframes numberPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+    text-shadow: 0 0 40px white;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 @keyframes blink {
   0% {
     opacity: 1;
@@ -591,54 +1003,6 @@ $bubble: rgba(95, 224, 255, 0.06);
   }
   100% {
     opacity: 1;
-  }
-}
-
-@keyframes tentacle-sway {
-  0% {
-    transform: translateY(0) rotate(-1deg);
-  }
-  50% {
-    transform: translateY(-6px) rotate(1deg);
-  }
-  100% {
-    transform: translateY(0) rotate(-1deg);
-  }
-}
-
-@keyframes slow-drift {
-  0% {
-    transform: translateX(0) translateY(0);
-    opacity: 0.95;
-  }
-  50% {
-    transform: translateX(-8px) translateY(-6px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(0) translateY(0);
-    opacity: 0.95;
-  }
-}
-
-/* 响应式：移动优先 */
-@media (max-width: 720px) {
-  .home {
-    .carousel {
-      display: none;
-    }
-    .carousel2 {
-      display: block;
-    }
-    .center {
-      padding: 18px 14px;
-      .title {
-        font-size: 2.2rem;
-      }
-      .subtitle {
-        font-size: 1.4rem;
-      }
-    }
   }
 }
 </style>

@@ -1,71 +1,104 @@
 <template>
-  <div class="gallery-container">
-    <button class="upload-btn" @click="openUploadModal">上传图片</button>
+  <div class="cantarella-gallery">
+    <!-- 深海粒子背景（动态浮游光点） -->
+    <div class="deep-sea-particles">
+      <div class="particle-layer layer1"></div>
+      <div class="particle-layer layer2"></div>
+      <div class="particle-layer layer3"></div>
+      <div class="glow-overlay"></div>
+    </div>
 
-    <section class="gallery section">
-      <div class="sort-controls">
-        <button @click="toggleSort" class="sort-btn">
-          按 {{ sortBy === "like_count" ? "点赞量" : "最新上传" }} 排序
-        </button>
-      </div>
-      <div class="gallery-grid">
-        <div
-          v-for="(img, index) in images"
-          :key="img.id"
-          class="card"
-          @click="openLightbox(index)"
-          ref="cards"
-        >
-          <div class="card-inner">
-            <img
-              :src="img.src"
-              :alt="img.alt"
-              loading="lazy"
-              @load="onImageLoad($event)"
-            />
-            <div class="overlay">
-              <span>查看大图</span>
-            </div>
-            <button class="like-btn" @click.stop="handleLike(img)">
-              <i class="heart" :class="{ liked: img.liked }"></i>
-              <span class="like-count">{{ img.likeCount }}</span>
-            </button>
-          </div>
+    <!-- 头部：深海明珠 + 触须 -->
+    <header class="gallery-header">
+      <div class="pearl">
+        <h1>翡萨烈·幻梦画廊</h1>
+        <div class="pearl-count">
+          <span>{{ imgTotal }}</span> 幅回响
         </div>
       </div>
-      <!-- sentinel：用于触发无限滚动 -->
-      <div ref="sentinel" class="sentinel"></div>
-      <!-- 可选：加载中/结束提示 -->
-      <div class="loading" v-if="loading">加载中...</div>
-      <div class="finished" v-if="finished">已全部加载</div>
-    </section>
-    <aside class="ranking-panel">
-      <div class="panel-header" @click="expanded = !expanded">
-        <h3 class="ranking-title">排行榜</h3>
-        <span>共{{ imgTotal }}张</span>
-        <span class="toggle-icon">{{ expanded ? "▾" : "▸" }}</span>
-      </div>
-      <transition name="fade">
-        <ul v-if="expanded" class="ranking-list">
-          <li
-            v-for="(item, idx) in rankingList"
-            :key="idx"
-            class="ranking-item"
-            :class="`rank-${idx + 1}`"
+    </header>
+
+    <!-- 主内容区：画廊 + 排行榜 -->
+    <div class="gallery-layout">
+      <!-- 左侧画廊主体 -->
+      <section class="gallery-main">
+        <!-- 排序与上传控制区 -->
+        <div class="gallery-toolbar">
+          <button class="sort-btn" @click="toggleSort">
+            <span class="btn-icon"></span>
+            {{ sortBy === "like_count" ? "点赞排序" : "最新上传" }}
+          </button>
+          <button class="upload-btn" @click="openUploadModal">
+            <span class="btn-icon"></span>
+            沉入幻梦·上传
+          </button>
+        </div>
+
+        <!-- 图片网格 -->
+        <div class="gallery-grid">
+          <div
+            v-for="(img, index) in images"
+            :key="img.id"
+            class="card"
+            @click="openLightbox(index)"
+            ref="cards"
           >
-            <span class="rank">{{ idx + 1 }}</span>
-            <span class="name">{{ item.nickname }}</span>
-            <span class="count">{{ item.count }} 张</span>
-          </li>
-        </ul>
-      </transition>
-    </aside>
-    <!-- Lightbox Modal -->
+            <div class="card-inner">
+              <img :src="img.src" :alt="img.alt" loading="lazy" />
+              <div class="card-overlay">
+                <span class="view-label">窥视幻梦</span>
+              </div>
+              <button class="like-btn" @click.stop="handleLike(img)">
+                <span class="heart" :class="{ liked: img.liked }"></span>
+                <span class="like-count">{{ img.likeCount }}</span>
+              </button>
+              <div class="card-depth"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 无限滚动哨兵 -->
+        <div ref="sentinel" class="sentinel"></div>
+
+        <!-- 加载状态 -->
+        <div class="loading-indicator" v-if="loading">
+          <div class="jelly-loader"></div>
+          <span>浮出水面……</span>
+        </div>
+        <div class="finished-indicator" v-if="finished">—— 已至深海之底 ——</div>
+      </section>
+
+      <!-- 右侧排行榜面板 -->
+      <aside class="ranking-panel" :class="{ collapsed: !expanded }">
+        <div class="panel-header" @click="expanded = !expanded">
+          <h3 class="ranking-title">贡献榜·幻梦回响</h3>
+          <span class="panel-count">{{ rankingList.length }}</span>
+          <span class="toggle-icon">{{ expanded ? "▾" : "▸" }}</span>
+        </div>
+        <transition name="fade">
+          <ul v-if="expanded" class="ranking-list">
+            <li
+              v-for="(item, idx) in rankingList"
+              :key="idx"
+              class="ranking-item"
+              :class="`rank-${idx + 1}`"
+            >
+              <span class="rank">{{ idx + 1 }}</span>
+              <span class="name">{{ item.nickname }}</span>
+              <span class="count">{{ item.count }} 幅</span>
+            </li>
+          </ul>
+        </transition>
+      </aside>
+    </div>
+
+    <!-- Lightbox 幻梦灯箱 -->
     <div v-if="lightboxOpen" class="lightbox" @click.self="closeLightbox">
       <span class="close" @click="closeLightbox">✕</span>
       <span class="prev" @click.stop="prevImage">‹</span>
       <img :src="images[currentIndex].src" :alt="images[currentIndex].alt" />
       <span class="next" @click.stop="nextImage">›</span>
+      <div class="lightbox-depth"></div>
     </div>
 
     <!-- 上传弹窗 -->
@@ -75,7 +108,16 @@
       @click.self="closeUploadModal"
     >
       <div class="upload-modal">
-        <h3>批量上传图片</h3>
+        <div class="modal-pearl">
+          <h3>沉入幻梦·上传</h3>
+          <span class="pearl-glow"></span>
+        </div>
+
+        <div class="stats">
+          今日已上传 <strong>{{ uploadedToday }}</strong> 张， 剩余
+          <strong>{{ remaining }}</strong> 张
+        </div>
+
         <div class="tip-container">
           <ul class="tips-list">
             <li>
@@ -93,16 +135,14 @@
             </li>
           </ul>
         </div>
-        <p class="stats">
-          今日已上传：<strong>{{ uploadedToday }}</strong> 张，
-          剩余可上传：<strong>{{ remaining }}</strong> 张
-        </p>
+
         <label>
-          昵称：
+          昵称（翡萨烈之名）
           <input v-model="nickname" type="text" placeholder="请输入昵称" />
         </label>
-        <label>
-          选择图片（最多 {{ remaining }} 张）：
+
+        <label class="file-label">
+          选择图片（最多 {{ remaining }} 张）
           <input
             ref="fileInput"
             type="file"
@@ -110,19 +150,25 @@
             accept="image/*"
             @change="handleFileSelect"
           />
+          <span class="file-hint" v-if="selectedFiles.length">
+            已选 {{ selectedFiles.length }} 张
+          </span>
         </label>
-        <p class="tip" v-if="selectedFiles.length">
-          已选 {{ selectedFiles.length }} 张
-        </p>
+
         <div class="modal-actions">
           <button :disabled="!canSubmit || isUploading" @click="submitUpload">
-            {{ isUploading ? "上传中..." : "立即上传" }}
+            {{ isUploading ? "熬制秘药中…" : "沉入幻梦" }}
           </button>
           <button class="cancel" @click="closeUploadModal">取消</button>
+        </div>
+
+        <div class="modal-tentacles">
+          <span></span><span></span><span></span><span></span>
         </div>
       </div>
     </div>
 
+    <!-- 浮动小人 -->
     <div class="floating-chibis">
       <img
         v-for="(pet, i) in chibiList"
@@ -314,13 +360,6 @@ function prevImage() {
 }
 function nextImage() {
   currentIndex.value = (currentIndex.value + 1) % images.value.length;
-}
-
-// 渐显＆Blur‑Up 效果
-function onImageLoad(e: Event) {
-  const img = e.target as HTMLImageElement;
-  const card = img.closest(".card");
-  card?.classList.add("loaded");
 }
 
 // 上传弹窗逻辑
@@ -574,327 +613,521 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style lang="scss" scoped>
-$bg: #04060b; // 深海夜色（坎特蕾拉风）
-$accent: #5fe0ff; // 冷海蓝高光（主要点光）
-$text: #eae9ee; // 主文字（微冷象牙）
-@use "sass:color";
+<style scoped lang="scss">
+/* 坎特蕾拉色板 - 深海幻梦 */
+$deep-bg: #030614; // 极深海
+$mid-bg: #14213d; // 深海中层
+$accent-lavender: #b8a9ff; // 薰衣草紫
+$accent-aqua: #7ae2ff; // 水母荧光
+$accent-pink: #ffb3c6; // 毒药粉
+$accent-deep-blue: #2a4a7a; // 深海蓝
+$text-light: #f0f5fe;
+$card-bg: rgba(255, 255, 255, 0.02);
+$glass-edge: rgba($accent-aqua, 0.2);
 
-// 辅助色（保留少量毒色点缀与暗紫）
-$purple: #6f5ce6;
-$venom: #ff7aa3;
-$muted: rgba(234, 233, 238, 0.78);
-$card-border: rgba($accent, 0.04);
-$soft-shadow: rgba(0, 0, 0, 0.64);
-$halo: rgba($accent, 0.06);
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 固定浮动小 chibi 层（保留） */
-.floating-chibis {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.chibi-img {
-  position: absolute;
-  width: 80px;
-  user-select: none;
-  transform-origin: center center;
-  pointer-events: auto;
-  z-index: 10;
-}
-
-/* 画廊容器整体背景改为海感光斑 + 深海底 */
-.gallery-container {
-  background: radial-gradient(circle at center, #071018 0%, $bg 100%);
-  color: $text;
+.cantarella-gallery {
+  position: relative;
   min-height: 100vh;
-  padding-bottom: 60px;
-  padding-top: 20px;
-  .section {
-    padding: 80px 20px;
+  background: linear-gradient(180deg, $deep-bg 0%, $mid-bg 100%);
+  color: $text-light;
+  overflow-x: hidden;
+  padding-top: 60px;
+  /* 深海粒子背景（取代轮播） */
+  .deep-sea-particles {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+
+    .particle-layer {
+      position: absolute;
+      inset: 0;
+      background-repeat: repeat;
+      background-size: 600px 600px;
+      mix-blend-mode: screen;
+      opacity: 0.3;
+      animation: particleFloat 60s infinite linear;
+    }
+
+    .layer1 {
+      background-image: radial-gradient(
+        circle at 30% 40%,
+        rgba($accent-aqua, 0.15) 2px,
+        transparent 3px
+      );
+      animation-duration: 80s;
+      opacity: 0.25;
+    }
+    .layer2 {
+      background-image: radial-gradient(
+        circle at 70% 60%,
+        rgba($accent-lavender, 0.12) 3px,
+        transparent 4px
+      );
+      background-size: 800px 800px;
+      animation-duration: 120s;
+      animation-direction: reverse;
+      opacity: 0.2;
+    }
+    .layer3 {
+      background-image: radial-gradient(
+        circle at 20% 80%,
+        rgba($accent-pink, 0.08) 4px,
+        transparent 5px
+      );
+      background-size: 1000px 1000px;
+      animation-duration: 100s;
+      opacity: 0.15;
+    }
+
+    .glow-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+          circle at 30% 30%,
+          rgba($accent-aqua, 0.05),
+          transparent 60%
+        ),
+        radial-gradient(
+          circle at 80% 70%,
+          rgba($accent-lavender, 0.05),
+          transparent 70%
+        );
+      animation: glowPulse 10s ease-in-out infinite alternate;
+    }
+  }
+
+  /* 头部深海明珠 */
+  .gallery-header {
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto 20px;
+    padding: 30px 20px 0;
+    text-align: center;
+
+    .pearl {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(8px);
+      border: 1px solid $glass-edge;
+      border-radius: 120px;
+      padding: 16px 48px;
+      box-shadow: 0 0 50px rgba($accent-aqua, 0.3),
+        0 20px 40px rgba(0, 0, 0, 0.4);
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba($accent-lavender, 0.2),
+          transparent 70%
+        );
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 400;
+        background: linear-gradient(
+          135deg,
+          #ffffff,
+          $accent-lavender,
+          $accent-aqua
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        letter-spacing: 4px;
+        font-family: "Times New Roman", serif;
+      }
+
+      .pearl-count {
+        margin-top: 8px;
+        font-size: 0.95rem;
+        color: rgba($text-light, 0.7);
+        span {
+          color: $accent-aqua;
+          font-weight: 600;
+          font-size: 1.2rem;
+          margin-right: 4px;
+        }
+      }
+    }
+  }
+
+  /* 双栏布局 */
+  .gallery-layout {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    gap: 24px;
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 20px;
+  }
 
-    .sort-controls {
-      margin: 16px 0;
+  /* 左侧画廊主体 */
+  .gallery-main {
+    flex: 1;
+    min-width: 0;
+  }
 
-      .sort-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 28px 10px 56px;
-        font-size: 1rem;
-        line-height: 1;
-        font-family: "PingFang SC", "Noto Sans SC", "Helvetica Neue", Arial,
-          sans-serif;
-        cursor: pointer;
-        border-radius: 28px;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba($purple, 0.03);
+  /* 工具栏 */
+  .gallery-toolbar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
 
-        /* 暗紫底 + 紫→海蓝徽记渐变（替代原血红） */
-        background: linear-gradient(
-          90deg,
-          rgba(10, 8, 14, 0.82) 0%,
-          rgba(8, 10, 16, 0.92) 50%,
-          rgba(6, 6, 10, 0.96) 100%
-        );
-        color: $text;
-        box-shadow: 0 10px 28px rgba(4, 6, 8, 0.56),
-          inset 0 1px 0 rgba($purple, 0.01);
-        transition: transform 200ms cubic-bezier(0.2, 0.9, 0.25, 1),
-          box-shadow 200ms ease, background 260ms ease, color 160ms ease,
-          filter 200ms ease;
-        -webkit-tap-highlight-color: transparent;
-        will-change: transform, box-shadow, filter;
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px 10px 20px;
+      background: rgba(6, 10, 20, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid $glass-edge;
+      border-radius: 40px;
+      color: $text-light;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba($accent-aqua, 0.1);
 
-        /* 左侧徽记 —— 暗紫到海蓝渐变（替换原血红徽记） */
-        &::after {
-          content: "";
-          position: absolute;
-          left: 18px;
-          top: 50%;
-          transform: translateY(-50%) rotate(-12deg);
-          width: 18px;
-          height: 22px;
-          border-radius: 4px;
-          background: linear-gradient(180deg, $purple 0%, $accent 70%);
-          box-shadow: 0 6px 18px rgba(24, 12, 48, 0.06),
-            inset 0 1px 0 rgba(255, 255, 255, 0.02);
-          clip-path: polygon(
-            50% 0,
-            78% 25%,
-            100% 45%,
-            50% 100%,
-            0% 45%,
-            22% 25%
-          );
-          pointer-events: none;
-          z-index: 3;
-          transition: transform 220ms ease, opacity 220ms ease,
-            box-shadow 220ms ease;
-        }
+      .btn-icon {
+        width: 18px;
+        height: 18px;
+        background: linear-gradient(135deg, $accent-lavender, $accent-aqua);
+        border-radius: 50%;
+        box-shadow: 0 0 10px $accent-aqua;
+      }
 
-        /* 左侧微光环（海蓝微光） */
-        &::before {
-          content: "";
-          position: absolute;
-          left: 6px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          background: radial-gradient(
-            circle at 35% 35%,
-            rgba($accent, 0.06),
-            transparent 45%
-          );
-          filter: blur(6px);
-          pointer-events: none;
-          opacity: 0.9;
-          z-index: 1;
-        }
-
-        /* hover：徽记放大 + 暗底微变（海蓝光晕） */
-        &:hover {
-          transform: translateY(-5px) scale(1.02);
-          box-shadow: 0 22px 66px rgba(4, 6, 8, 0.66),
-            0 0 44px rgba($accent, 0.12);
-          filter: saturate(1.04) brightness(1.02);
-          color: $accent;
-          background: linear-gradient(
-            90deg,
-            rgba(10, 8, 14, 0.88) 0%,
-            rgba(8, 10, 16, 0.94) 50%,
-            rgba(6, 6, 10, 0.98) 100%
-          );
-        }
-
-        &:hover::after {
-          transform: translateY(-56%) rotate(-6deg) scale(1.12);
-          box-shadow: 0 10px 30px rgba($accent, 0.14),
-            inset 0 2px 6px rgba(255, 255, 255, 0.06);
-          opacity: 1;
-        }
-
-        &:active {
-          transform: translateY(-2px) scale(0.995);
-          box-shadow: 0 10px 28px rgba(4, 6, 8, 0.5),
-            0 0 20px rgba($accent, 0.06);
-        }
-
-        &:focus-visible {
-          outline: none;
-          box-shadow: 0 22px 66px rgba(4, 6, 8, 0.66),
-            0 0 0 6px rgba($accent, 0.06);
-        }
+      &:hover {
+        transform: translateY(-2px);
+        border-color: rgba($accent-aqua, 0.5);
+        box-shadow: 0 0 30px rgba($accent-aqua, 0.3);
       }
     }
 
-    .gallery-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
+    .upload-btn {
+      background: linear-gradient(
+        135deg,
+        rgba($accent-lavender, 0.2),
+        rgba($accent-aqua, 0.2)
+      );
+      border-color: rgba($accent-pink, 0.3);
+    }
+  }
 
-      .card {
-        perspective: 1000px;
+  /* 图片网格 */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+  }
+
+  /* 卡片 - 修复图片模糊问题 */
+  .card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+
+    &.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .card-inner {
+      position: relative;
+      border-radius: 40px 40px 30px 30px;
+      overflow: hidden;
+      background: $card-bg;
+      backdrop-filter: blur(8px);
+      border: 1px solid $glass-edge;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      transition: all 0.4s ease;
+
+      &::before {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: 10%;
+        width: 80%;
+        height: 30px;
+        background: radial-gradient(
+          ellipse at center,
+          rgba($accent-aqua, 0.15),
+          transparent 70%
+        );
+        filter: blur(10px);
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      &:hover {
+        transform: translateY(-6px) scale(1.02);
+        border-color: rgba($accent-aqua, 0.4);
+        box-shadow: 0 30px 60px rgba($accent-aqua, 0.2);
+      }
+
+      img {
+        width: 100%;
+        height: 240px;
+        object-fit: cover;
+        display: block;
+        opacity: 1;
+        transition: opacity 0.6s ease;
+      }
+
+      .card-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba($deep-bg, 0.8), transparent);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 20px;
         opacity: 0;
-        transform: translateY(20px);
+        transition: opacity 0.4s;
+        z-index: 2;
 
-        &.visible {
-          animation: fadeInUp 0.6s ease forwards;
+        .view-label {
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          padding: 6px 16px;
+          border-radius: 40px;
+          border: 1px solid rgba($accent-aqua, 0.3);
+          color: $accent-aqua;
+          font-size: 0.9rem;
+        }
+      }
+
+      &:hover .card-overlay {
+        opacity: 1;
+      }
+
+      .like-btn {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba($accent-aqua, 0.3);
+        border-radius: 30px;
+        padding: 6px 12px;
+        cursor: pointer;
+        z-index: 3;
+        transition: all 0.2s;
+
+        &:hover {
+          transform: scale(1.1);
+          border-color: $accent-aqua;
         }
 
-        &.loaded {
-          .card-inner img {
-            filter: none;
-            opacity: 1;
+        .heart {
+          width: 20px;
+          height: 20px;
+          background: url("/icons/heart-red-outline.svg") no-repeat center;
+          background-size: contain;
+          filter: drop-shadow(0 0 6px $accent-aqua);
+          transition: all 0.3s;
+
+          &.liked {
+            background: url("/icons/heart-red-filled.svg") no-repeat center;
+            background-size: contain;
+            filter: drop-shadow(0 0 10px $accent-pink);
           }
         }
 
-        .card-inner {
-          position: relative;
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
-          transform-style: preserve-3d;
-          transition: transform 0.5s ease, box-shadow 0.5s ease;
-
-          &:hover {
-            transform: rotateY(6deg) rotateX(3deg) scale(1.05);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.9);
-          }
-
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            filter: blur(20px) grayscale(40%);
-            opacity: 0.8;
-            transition: filter 0.6s ease, opacity 0.6s ease;
-          }
-
-          .overlay {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            padding: 12px 0;
-            background: linear-gradient(transparent, rgba(2, 6, 10, 0.8));
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.4s;
-
-            span {
-              color: $text;
-              font-family: "Cinzel Decorative", serif;
-              font-size: 1.1rem;
-              letter-spacing: 1px;
-              background: rgba(0, 0, 0, 0.6);
-              padding: 4px 12px;
-              border-radius: 20px;
-            }
-          }
-
-          &:hover .overlay {
-            opacity: 1;
-          }
-
-          .like-btn {
-            position: absolute;
-            bottom: 12px;
-            right: 12px;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px;
-            border-radius: 50%;
-            transition: transform 0.2s ease;
-
-            &:hover {
-              transform: scale(1.3);
-            }
-
-            .heart {
-              width: 24px;
-              height: 24px;
-              background: url("/icons/heart-red-outline.svg") no-repeat center;
-              background-size: contain;
-              transition: all 0.3s ease;
-              filter: drop-shadow(0 0 6px rgba($accent, 0.6));
-            }
-
-            .liked {
-              background: url("/icons/heart-red-filled.svg") no-repeat center;
-              background-size: contain;
-              animation: pop 0.4s ease;
-              position: relative;
-
-              &::after {
-                content: "";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 40px;
-                height: 40px;
-                background: rgba($accent, 0.18);
-                border-radius: 50%;
-                transform: translate(-50%, -50%) scale(0);
-                animation: pulse 1.2s ease-out infinite;
-                pointer-events: none;
-              }
-            }
-
-            .like-count {
-              font-size: 1rem;
-              color: $accent;
-              text-shadow: 0 0 6px rgba(0, 0, 0, 0.48);
-              font-weight: bold;
-            }
-          }
-
-          @keyframes pulse {
-            0% {
-              transform: translate(-50%, -50%) scale(0.6);
-              opacity: 0.6;
-            }
-            50% {
-              transform: translate(-50%, -50%) scale(1.2);
-              opacity: 0;
-            }
-            100% {
-              transform: translate(-50%, -50%) scale(0.6);
-              opacity: 0;
-            }
-          }
+        .like-count {
+          color: $text-light;
+          font-size: 0.9rem;
+          font-weight: 600;
         }
+      }
+
+      .card-depth {
+        height: 20px;
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          rgba($accent-deep-blue, 0.2)
+        );
+        margin: 0;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        pointer-events: none;
+        z-index: 1;
       }
     }
   }
 
+  /* 无限滚动相关 */
+  .sentinel {
+    height: 1px;
+    opacity: 0;
+  }
+
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 30px;
+    color: rgba($accent-aqua, 0.7);
+
+    .jelly-loader {
+      width: 24px;
+      height: 24px;
+      border: 2px solid rgba($accent-aqua, 0.2);
+      border-top-color: $accent-aqua;
+      border-radius: 50%;
+      animation: spin 1s infinite linear;
+    }
+  }
+
+  .finished-indicator {
+    text-align: center;
+    padding: 30px;
+    color: rgba($text-light, 0.2);
+    font-style: italic;
+  }
+
+  /* 右侧排行榜面板 */
+  .ranking-panel {
+    width: 260px;
+    background: rgba(6, 10, 20, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid $glass-edge;
+    border-radius: 40px 40px 30px 30px;
+    padding: 20px 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    align-self: start;
+    position: sticky;
+    top: 100px;
+    transition: all 0.3s;
+
+    &.collapsed {
+      padding-bottom: 12px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba($accent-aqua, 0.2);
+
+      .ranking-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 400;
+        color: $accent-aqua;
+        letter-spacing: 1px;
+        flex: 1;
+      }
+
+      .panel-count {
+        background: rgba($accent-deep-blue, 0.5);
+        padding: 2px 8px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+      }
+
+      .toggle-icon {
+        font-size: 1.2rem;
+        color: $accent-aqua;
+      }
+    }
+
+    .ranking-list {
+      list-style: none;
+      padding: 12px 0 0;
+      margin: 0;
+      max-height: 400px;
+      overflow-y: auto;
+
+      &::-webkit-scrollbar {
+        width: 4px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: $accent-aqua;
+        border-radius: 4px;
+      }
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 30px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: rgba($accent-aqua, 0.1);
+        transform: translateX(-4px);
+      }
+
+      .rank {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba($accent-deep-blue, 0.5);
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .name {
+        flex: 1;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .count {
+        color: $accent-aqua;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      &.rank-1 .rank {
+        background: linear-gradient(135deg, $accent-lavender, $accent-aqua);
+        color: $deep-bg;
+      }
+      &.rank-2 .rank {
+        background: $accent-lavender;
+      }
+      &.rank-3 .rank {
+        background: $accent-deep-blue;
+      }
+    }
+  }
+
+  /* Lightbox 幻梦灯箱 */
   .lightbox {
     position: fixed;
     inset: 0;
-    background: rgba(2, 6, 10, 0.96);
+    background: rgba(2, 6, 10, 0.95);
+    backdrop-filter: blur(16px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -903,28 +1136,26 @@ $halo: rgba($accent, 0.06);
     img {
       max-width: 85%;
       max-height: 85%;
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9);
-      animation: fadeInUp 0.4s ease;
+      border-radius: 24px;
+      border: 2px solid rgba($accent-aqua, 0.3);
+      box-shadow: 0 0 60px rgba($accent-aqua, 0.3);
     }
 
     .close,
     .prev,
     .next {
       position: absolute;
-      color: $text;
-      font-size: 2.5rem;
+      color: $text-light;
+      font-size: 3rem;
       cursor: pointer;
-      user-select: none;
-      padding: 8px;
-      border-radius: 50%;
-      transition: background 0.3s;
-
+      padding: 16px;
+      text-shadow: 0 0 20px $accent-aqua;
+      transition: all 0.2s;
       &:hover {
-        color: $accent;
+        color: $accent-aqua;
+        transform: scale(1.2);
       }
     }
-
     .close {
       top: 20px;
       right: 20px;
@@ -939,44 +1170,23 @@ $halo: rgba($accent, 0.06);
       top: 50%;
       transform: translateY(-50%);
     }
-  }
 
-  .upload-btn {
-    position: fixed;
-    bottom: 64px;
-    left: 24px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 18px;
-    font-size: 1rem;
-    z-index: 10;
-    cursor: pointer;
-    user-select: none;
-
-    color: #071018; // 深色文本以配合亮色按钮
-    background: linear-gradient(90deg, $accent 0%, $purple 60%);
-    border-radius: 28px;
-    backdrop-filter: blur(6px) saturate(120%);
-    box-shadow: 0 14px 36px rgba(4, 4, 8, 0.54), 0 0 28px rgba($accent, 0.12);
-    overflow: visible;
-    transition: transform 220ms cubic-bezier(0.2, 0.9, 0.25, 1),
-      box-shadow 220ms ease, background 260ms ease, filter 220ms ease;
-
-    &:hover {
-      transform: translateY(-6px) scale(1.02);
-      box-shadow: 0 26px 68px rgba(4, 2, 6, 0.62), 0 0 56px rgba($accent, 0.18);
-      filter: brightness(1.04) saturate(1.05);
-      background: linear-gradient(90deg, $accent, $purple);
-    }
-
-    &:active {
-      transform: translateY(-2px) scale(0.99);
-      box-shadow: 0 16px 44px rgba(4, 2, 6, 0.48), 0 0 36px rgba($accent, 0.1);
+    .lightbox-depth {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100px;
+      background: linear-gradient(
+        to top,
+        rgba($accent-deep-blue, 0.3),
+        transparent
+      );
+      pointer-events: none;
     }
   }
 
-  /* upload modal / overlay：改为海蓝 + 暗紫舞台匣 + 微毒点缀 */
+  /* 上传弹窗 */
   .upload-modal-overlay {
     position: fixed;
     inset: 0;
@@ -984,557 +1194,304 @@ $halo: rgba($accent, 0.06);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(
-      180deg,
-      rgba(4, 6, 10, 0.9),
-      rgba(8, 6, 12, 0.86)
-    );
-    backdrop-filter: blur(10px) saturate(0.95);
-
-    &::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(
-          800px 260px at 50% 28%,
-          rgba($accent, 0.06),
-          transparent 14%
-        ),
-        radial-gradient(
-          420px 160px at 18% 72%,
-          rgba($purple, 0.03),
-          transparent 18%
-        ),
-        linear-gradient(180deg, rgba(0, 0, 0, 0.26), transparent 40%);
-      mix-blend-mode: screen;
-    }
+    background: rgba(2, 6, 10, 0.8);
+    backdrop-filter: blur(12px);
   }
 
   .upload-modal {
-    position: relative;
-    width: 720px;
+    width: 500px;
     max-width: calc(100% - 40px);
-    padding: 36px;
-    border-radius: 16px;
-    overflow: hidden;
-    z-index: 2100;
-    color: $text;
-    font-family: "Helvetica Neue", "Noto Sans SC", "PingFang SC", sans-serif;
-    -webkit-font-smoothing: antialiased;
+    background: rgba(6, 10, 20, 0.9);
+    backdrop-filter: blur(16px);
+    border: 1px solid $glass-edge;
+    border-radius: 60px 60px 40px 40px;
+    padding: 30px;
+    position: relative;
+    box-shadow: 0 0 80px rgba($accent-aqua, 0.2);
 
-    background: linear-gradient(
-      180deg,
-      rgba(8, 10, 12, 0.94),
-      rgba(10, 8, 12, 0.92)
-    );
-    border: 1px solid rgba($purple, 0.06);
-    backdrop-filter: blur(6px) saturate(0.92);
-    box-shadow: 0 30px 90px rgba(4, 4, 8, 0.78),
-      inset 0 1px 0 rgba($accent, 0.03);
-
-    &::before {
-      content: "";
-      position: absolute;
-      inset: -2px;
-      border-radius: 18px;
-      pointer-events: none;
-      background: linear-gradient(
-        90deg,
-        rgba($accent, 0.04),
-        rgba($purple, 0.02),
-        rgba($accent, 0.03)
-      );
-      filter: blur(12px);
-      mix-blend-mode: screen;
-      opacity: 0.95;
-    }
-
-    h3 {
-      margin: 0 0 16px 0;
-      font-size: 1.5rem;
-      color: $text;
-      font-weight: 900;
+    .modal-pearl {
       text-align: center;
-      letter-spacing: 0.6px;
-      text-shadow: 0 6px 20px rgba(6, 4, 8, 0.48);
+      margin-bottom: 20px;
+      h3 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 400;
+        background: linear-gradient(
+          135deg,
+          #fff,
+          $accent-lavender,
+          $accent-aqua
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-family: "Times New Roman", serif;
+      }
+      .pearl-glow {
+        display: block;
+        width: 100px;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          $accent-aqua,
+          transparent
+        );
+        margin: 8px auto 0;
+        border-radius: 2px;
+      }
     }
 
     .stats {
-      margin: 18px 0;
-      font-size: 1rem;
       text-align: center;
-      color: rgba($text, 0.96);
-
+      margin-bottom: 20px;
+      font-size: 1rem;
       strong {
-        color: $accent;
+        color: $accent-aqua;
       }
     }
 
     .tip-container {
-      margin-top: 18px;
-      padding: 14px 18px;
-      background: linear-gradient(
-        180deg,
-        rgba(6, 8, 10, 0.64),
-        rgba(6, 6, 8, 0.56)
-      );
-      border-left: 4px solid rgba($accent, 0.12);
-      border-radius: 10px;
-      backdrop-filter: blur(4px);
-      color: rgba($text, 0.94);
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 4px solid $accent-aqua;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
 
       .tips-list {
         list-style: none;
-        margin: 0;
         padding: 0;
-
+        margin: 0;
         li {
           position: relative;
-          padding-left: 34px;
-          margin-bottom: 10px;
-          font-size: 0.95rem;
-          color: rgba($text, 0.94);
-
+          padding-left: 24px;
+          margin-bottom: 8px;
+          font-size: 0.9rem;
+          color: rgba($text-light, 0.8);
           &::before {
             content: "";
             position: absolute;
-            left: 8px;
+            left: 4px;
             top: 8px;
-            width: 14px;
-            height: 14px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: radial-gradient(
-              circle at 30% 30%,
-              rgba($accent, 0.12) 0%,
-              rgba($accent, 0.6) 20%,
-              rgba($purple, 0.4) 60%,
-              rgba(60, 40, 80, 1) 100%
-            );
-            box-shadow: 0 6px 18px rgba(10, 6, 18, 0.06);
-          }
-
-          &:last-child {
-            margin-bottom: 0;
+            background: $accent-aqua;
+            box-shadow: 0 0 10px $accent-aqua;
           }
         }
       }
     }
 
-    .tip {
-      margin-top: 10px;
-      text-align: right;
-      font-size: 0.9rem;
-      color: rgba($text, 0.86);
-    }
-
     label {
       display: block;
-      margin-bottom: 18px;
+      margin-bottom: 20px;
+      color: rgba($text-light, 0.9);
       font-size: 0.95rem;
-      color: rgba($text, 0.96);
 
-      input[type="text"],
-      input[type="file"],
-      textarea {
+      input,
+      .file-hint {
         width: 100%;
         margin-top: 8px;
-        padding: 12px 14px;
-        border-radius: 10px;
-        border: 1px solid rgba($purple, 0.04);
-        background: linear-gradient(
-          180deg,
-          rgba(6, 8, 10, 0.6),
-          rgba(6, 6, 8, 0.64)
-        );
-        color: rgba($text, 0.96);
-        font-size: 0.95rem;
-        outline: none;
-        transition: border-color 0.18s ease, box-shadow 0.18s ease,
-          transform 0.12s ease;
-        box-shadow: inset 0 -4px 10px rgba(0, 0, 0, 0.46);
-      }
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba($accent-aqua, 0.2);
+        border-radius: 40px;
+        color: $text-light;
+        font-size: 1rem;
+        transition: all 0.2s;
 
-      input[type="text"]::placeholder,
-      textarea::placeholder {
-        color: rgba(180, 190, 200, 0.3);
+        &:focus {
+          outline: none;
+          border-color: $accent-aqua;
+          box-shadow: 0 0 20px rgba($accent-aqua, 0.3);
+        }
       }
+      .file-hint {
+        display: inline-block;
+        width: auto;
+        margin-top: 8px;
+        background: rgba($accent-deep-blue, 0.3);
+      }
+    }
 
-      input[type="text"]:focus,
-      input[type="file"]:focus,
-      textarea:focus {
-        border-color: rgba($accent, 0.36);
-        box-shadow: 0 12px 36px rgba($accent, 0.06),
-          0 2px 8px rgba($purple, 0.04);
-        transform: translateY(-1px);
+    .file-label {
+      input[type="file"] {
+        padding: 8px;
       }
     }
 
     .modal-actions {
       display: flex;
+      gap: 16px;
       justify-content: flex-end;
-      gap: 14px;
-      margin-top: 28px;
-      flex-wrap: wrap;
-      align-items: center;
+      margin-top: 30px;
 
       button {
-        padding: 12px 24px;
+        padding: 12px 32px;
         border: none;
-        border-radius: 24px;
+        border-radius: 40px;
+        font-weight: 600;
         cursor: pointer;
-        font-weight: 800;
-        font-size: 0.95rem;
-        transition: background 0.22s ease, box-shadow 0.22s ease,
-          transform 0.12s ease;
-        min-width: 96px;
-        color: #071018;
-      }
+        transition: all 0.2s;
+        font-size: 1rem;
 
-      /* 主按钮：海蓝 → 暗紫 渐变 */
-      button:not(.cancel) {
-        background: linear-gradient(
-          135deg,
-          $accent 0%,
-          $purple 60%,
-          rgba($purple, 6%) 100%
-        );
-        box-shadow: 0 12px 36px rgba(80, 140, 160, 0.08),
-          0 4px 18px rgba(30, 20, 40, 0.04);
-        color: #071018;
-      }
+        &:not(.cancel) {
+          background: linear-gradient(135deg, $accent-lavender, $accent-aqua);
+          color: $deep-bg;
+          box-shadow: 0 0 20px rgba($accent-aqua, 0.4);
 
-      button:not(.cancel):hover:not(:disabled) {
-        transform: translateY(-4px);
-        box-shadow: 0 22px 66px rgba(6, 10, 14, 0.32),
-          0 8px 28px rgba($accent, 0.12);
-      }
+          &:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba($accent-aqua, 0.7);
+          }
+          &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+          }
+        }
 
-      button:not(.cancel):disabled {
-        background: linear-gradient(
-          135deg,
-          rgba(6, 8, 10, 0.48),
-          rgba(6, 6, 8, 0.44)
-        );
-        opacity: 0.6;
-        cursor: not-allowed;
-        box-shadow: none;
-        color: rgba(180, 170, 180, 0.6);
+        &.cancel {
+          background: transparent;
+          border: 1px solid rgba($accent-aqua, 0.3);
+          color: $text-light;
+          &:hover {
+            background: rgba($accent-aqua, 0.1);
+          }
+        }
       }
+    }
 
-      button.cancel {
-        background: transparent;
-        border: 2px solid rgba($purple, 0.06);
-        color: rgba(238, 228, 233, 0.9);
-        min-width: 86px;
-        box-shadow: inset 0 -4px 8px rgba(0, 0, 0, 0.22);
-      }
-
-      button.cancel:hover {
-        background: rgba($purple, 0.02);
+    .modal-tentacles {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      span {
+        width: 4px;
+        height: 30px;
+        background: linear-gradient(to top, $accent-aqua, transparent);
+        border-radius: 2px;
+        animation: tentacleWave 3s infinite alternate;
+        &:nth-child(1) {
+          height: 40px;
+          animation-delay: 0s;
+        }
+        &:nth-child(2) {
+          height: 25px;
+          animation-delay: 0.7s;
+          background: $accent-pink;
+        }
+        &:nth-child(3) {
+          height: 50px;
+          animation-delay: 0.3s;
+        }
+        &:nth-child(4) {
+          height: 35px;
+          animation-delay: 1.1s;
+        }
       }
     }
   }
 
-  /* 右侧排行面板：改为坎特蕾拉舞台匣（暗紫 + 海蓝） */
-  .ranking-panel {
-    width: 220px;
-    padding: 16px;
+  /* 浮动小人 */
+  .floating-chibis {
     position: fixed;
-    top: 64px;
-    right: 12px;
-    z-index: 1200;
-    color: $text;
-    font-family: "PingFang SC", "Noto Sans SC", "Helvetica Neue", Arial,
-      sans-serif;
-
-    background: linear-gradient(
-      180deg,
-      rgba(6, 6, 8, 0.94),
-      rgba(10, 8, 12, 0.92)
-    );
-    border-radius: 18px;
-    border: 1px solid rgba($purple, 0.06);
-    -webkit-backdrop-filter: blur(8px) saturate(0.92);
-    backdrop-filter: blur(8px) saturate(0.92);
-    box-shadow: 0 18px 56px rgba(4, 4, 8, 0.78),
-      inset 0 1px 0 rgba($accent, 0.03);
-
-    &.collapsed {
-      height: auto;
-      padding-bottom: 8px;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99;
+    .chibi-img {
+      position: absolute;
+      width: 80px;
+      pointer-events: auto;
+      filter: drop-shadow(0 0 15px rgba($accent-aqua, 0.5));
     }
+  }
 
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      user-select: none;
-      padding-bottom: 6px;
-
-      .ranking-title {
-        margin: 0;
-        font-size: 1.05rem;
-        font-weight: 900;
-        color: rgba($text, 4%);
-        font-family: "Zhi Mang Xing", "STKaiti", serif;
-        letter-spacing: 0.6px;
-        text-shadow: 0 6px 18px rgba(6, 4, 8, 0.48);
-      }
-
-      .toggle-icon {
-        font-size: 1rem;
-        color: $accent;
-        background: linear-gradient(
-          180deg,
-          rgba(8, 6, 10, 0.48),
-          rgba(6, 4, 8, 0.36)
-        );
-        padding: 6px 8px;
-        border-radius: 9px;
-        border: 1px solid rgba($purple, 0.04);
-        box-shadow: 0 6px 14px rgba(4, 4, 8, 0.48),
-          inset 0 1px 0 rgba($accent, 0.02);
-        transition: transform 220ms, box-shadow 220ms;
-      }
-
-      &:hover .toggle-icon,
-      &:focus-within .toggle-icon {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 30px rgba($accent, 0.08),
-          inset 0 1px 0 rgba($purple, 0.02);
-      }
+  /* 动画 */
+  @keyframes tendrilWave {
+    0% {
+      transform: translateY(0) scaleY(1);
+      opacity: 0.5;
     }
+    100% {
+      transform: translateY(-8px) scaleY(1.2);
+      opacity: 0.9;
+    }
+  }
+  @keyframes tentacleWave {
+    0% {
+      transform: translateY(0) scaleY(1);
+      opacity: 0.4;
+    }
+    100% {
+      transform: translateY(-10px) scaleY(1.3);
+      opacity: 0.8;
+    }
+  }
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes particleFloat {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 600px 600px;
+    }
+  }
+  @keyframes glowPulse {
+    0% {
+      opacity: 0.3;
+    }
+    100% {
+      opacity: 0.7;
+    }
+  }
 
-    .ranking-list {
-      list-style: none;
-      padding: 0;
-      margin: 12px 0 0;
-      overflow-y: auto;
-      max-height: 55vh;
-
-      &::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      &::-webkit-scrollbar-thumb {
-        background: linear-gradient(
-          180deg,
-          rgba($accent, 0.16),
-          rgba($purple, 0.12)
-        );
-        border-radius: 8px;
-        border: 1px solid rgba(50, 30, 60, 0.04);
-      }
-      &::-webkit-scrollbar-track {
-        background: transparent;
+  /* 移动端适配 */
+  @media (max-width: 720px) {
+    .gallery-header .pearl {
+      padding: 12px 24px;
+      h1 {
+        font-size: 1.5rem;
       }
     }
 
-    .ranking-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      border-radius: 12px;
-      cursor: default;
-      background: linear-gradient(
-        180deg,
-        rgba(8, 8, 10, 0.56),
-        rgba(6, 6, 8, 0.54)
-      );
-      transition: transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1),
-        box-shadow 260ms, background 260ms, color 200ms;
-      position: relative;
+    .gallery-layout {
+      flex-direction: column;
+      padding: 0 12px;
+    }
 
-      &:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 18px 48px rgba(6, 4, 8, 0.56),
-          0 0 28px rgba($accent, 0.04);
-        background: linear-gradient(
-          90deg,
-          rgba(10, 8, 12, 0.66),
-          rgba(8, 6, 10, 0.62)
-        );
-      }
+    .ranking-panel {
+      width: 100%;
+      position: static;
+      margin-top: 20px;
+    }
 
-      &:focus-within,
-      &:focus {
-        outline: none;
-        box-shadow: 0 18px 48px rgba($accent, 0.06),
-          0 0 0 4px rgba($purple, 0.03);
-        transform: translateY(-4px);
-      }
+    .gallery-toolbar {
+      justify-content: center;
+    }
 
-      .rank {
-        width: 36px;
-        text-align: center;
-        font-weight: 900;
-        font-size: 1rem;
-        color: rgba($text, 2%);
-        flex-shrink: 0;
-      }
-      .name {
-        flex: 1;
-        padding: 0 8px;
-        font-size: 0.95rem;
-        color: $text;
-        font-weight: 700;
-        white-space: normal;
-        word-break: break-word;
-        line-height: 1.25;
-      }
-      .count {
-        font-size: 0.9rem;
-        color: $accent;
-        font-weight: 800;
-        min-width: 36px;
-        text-align: right;
-        text-shadow: 0 2px 6px rgba(6, 4, 8, 0.04);
-        flex-shrink: 0;
-      }
+    .gallery-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
 
-      &.rank-1 {
-        background: linear-gradient(
-          135deg,
-          $accent 0%,
-          $purple 45%,
-          rgba($purple, 6%) 100%
-        );
-        color: #071018;
-        box-shadow: 0 18px 56px rgba($accent, 0.16),
-          0 0 30px rgba($purple, 0.06);
-
-        .rank,
-        .name,
-        .count {
-          color: #071018;
-        }
-      }
-
-      &.rank-2 {
-        background: linear-gradient(
-          135deg,
-          $purple 0%,
-          rgba(rgba($accent, 10%), 0.16) 60%,
-          rgba($purple, 8%) 100%
-        );
-        color: $text;
-        box-shadow: 0 14px 48px rgba(80, 60, 120, 0.08);
-
-        .rank,
-        .name,
-        .count {
-          color: $text;
-        }
-      }
-
-      &.rank-3 {
-        background: linear-gradient(
-          135deg,
-          rgba($purple, 0.12) 0%,
-          rgba(rgba($purple, 10%), 0.16) 60%,
-          rgba(60, 40, 70, 0.2) 100%
-        );
-        color: $text;
-        box-shadow: 0 10px 36px rgba(40, 30, 60, 0.08);
-
-        .rank {
-          color: rgba(235, 200, 210, 0.95);
-        }
-        .count {
-          color: rgba(235, 200, 210, 0.95);
+    .upload-modal {
+      padding: 20px;
+      .modal-actions {
+        flex-direction: column;
+        button {
+          width: 100%;
         }
       }
     }
-
-    .fade-enter-active,
-    .fade-leave-active {
-      transition: opacity 0.28s ease;
-    }
-    .fade-enter-from,
-    .fade-leave-to {
-      opacity: 0;
-    }
   }
-}
-
-/* 动画关键帧：水感/音符/气泡等（低频，仅 transform/opacity） */
-@keyframes staff-drift {
-  0% {
-    transform: translateY(-3%);
-    opacity: 0.92;
-  }
-  50% {
-    transform: translateY(5%);
-    opacity: 0.98;
-  }
-  100% {
-    transform: translateY(-3%);
-    opacity: 0.92;
-  }
-}
-
-@keyframes note-float {
-  0% {
-    transform: translateY(0) rotate(-6deg) scale(0.95);
-    opacity: 0.86;
-  }
-  50% {
-    transform: translateY(-12px) rotate(3deg) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) rotate(-6deg) scale(0.95);
-    opacity: 0.86;
-  }
-}
-
-@keyframes bubble-rise {
-  0% {
-    transform: translateY(6px) translateX(0);
-    opacity: 0.06;
-  }
-  50% {
-    transform: translateY(-6px) translateX(6px);
-    opacity: 0.14;
-  }
-  100% {
-    transform: translateY(-22px) translateX(0);
-    opacity: 0.02;
-  }
-}
-
-@keyframes slow-drift {
-  0% {
-    transform: translateX(0) translateY(0);
-    opacity: 0.95;
-  }
-  50% {
-    transform: translateX(-10px) translateY(-6px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(0) translateY(0);
-    opacity: 0.95;
-  }
-}
-
-/* 响应式（保留你原有行为） */
-@media (max-width: 980px) {
-  .gallery-container .section {
-    padding: 40px 14px;
-  }
-  .gallery-container .gallery-grid {
-    gap: 16px;
-  }
-  .upload-modal {
-    width: calc(100% - 24px);
-    padding: 18px;
-  }
-
 }
 </style>
