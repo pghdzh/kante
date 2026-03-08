@@ -50,6 +50,37 @@
         <span class="count">{{ onlineCount }}</span>
         <span class="unit">人</span>
       </div>
+      <!-- 音乐播放按钮（秘药瓶 + 水母） -->
+      <button
+        class="music-phial"
+        @click="togglePlay"
+        :disabled="audioLoading"
+        :title="
+          audioLoading ? '幻梦加载中' : isPlaying ? '暂停幻梦' : '奏响幻梦'
+        "
+      >
+        <!-- 瓶身光晕 -->
+        <span class="phial-glow"></span>
+        <!-- 水母伞盖（装饰） -->
+        <span class="jelly-umbrella"></span>
+        <!-- 主图标：根据状态变化 -->
+        <span
+          class="phial-icon"
+          :class="{ loading: audioLoading, playing: isPlaying }"
+        >
+          <span v-if="audioLoading" class="loader"></span>
+          <span v-else-if="isPlaying">❚❚</span>
+          <span v-else>♪</span>
+        </span>
+        <!-- 状态文字 -->
+        <span class="status">{{
+          audioLoading ? "入梦" : isPlaying ? "梦醒" : "入梦"
+        }}</span>
+        <!-- 漂浮水母触须（动态） -->
+        <span class="jelly-tentacle" v-for="n in 3" :key="n"></span>
+        <!-- 底部触须光晕 -->
+        <span class="tentacle-glow"></span>
+      </button>
     </nav>
 
     <!-- 移动端汉堡菜单 (水母伞造型) -->
@@ -89,6 +120,58 @@ const onlineCount = ref<number | null>(null);
 const socket: any = io("http://36.150.237.25:3000", {
   query: { siteId },
 });
+// 音乐播放控制（增强版）
+const audio = ref<HTMLAudioElement | null>(null);
+const isPlaying = ref(false);
+const audioLoading = ref(false); // 加载状态
+
+// 三首候选曲目（坎特蕾拉风格）
+const musicList = [
+  "http://36.150.237.25:3000/music/悠忽舞于梦中.mp3",
+  "http://36.150.237.25:3000/music/沉沦幻海（伴奏）.mp3",
+  "http://36.150.237.25:3000/music/Hush.mp3",
+];
+const currentMusic = ref(
+  musicList[Math.floor(Math.random() * musicList.length)]
+);
+
+function togglePlay() {
+  if (audioLoading.value) return;
+
+  if (!audio.value) {
+    // 首次点击：创建 audio 并加载
+    audio.value = new Audio(currentMusic.value);
+    audio.value.loop = false;
+    audio.value.preload = "auto";
+
+    // 监听加载事件
+    audio.value.addEventListener("canplaythrough", () => {
+      audioLoading.value = false;
+    });
+    audio.value.addEventListener("error", () => {
+      audioLoading.value = false;
+      alert("幻梦加载失败，请稍后重试");
+    });
+
+    audioLoading.value = true;
+  }
+
+  if (isPlaying.value) {
+    audio.value.pause();
+    isPlaying.value = false;
+  } else {
+    audio.value
+      .play()
+      .then(() => {
+        isPlaying.value = true;
+        audioLoading.value = false; // 确保播放后加载状态关闭
+      })
+      .catch((e) => {
+        console.warn("播放被阻止", e);
+        audioLoading.value = false;
+      });
+  }
+}
 
 onMounted(() => {
   socket.on("onlineCount", (count: number) => {
@@ -98,6 +181,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   socket.disconnect();
+  audio.value?.pause();
+  audio.value = null;
 });
 </script>
 
@@ -391,6 +476,219 @@ onBeforeUnmount(() => {
         opacity: 0.9;
       }
     }
+    /* 音乐播放按钮（秘药瓶 + 水母）- 替换原有样式 */
+    .music-phial {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(145deg, #1f2b4a, #0e1a2f);
+      padding: 6px 18px 6px 16px;
+      border-radius: 40px;
+      border: 1px solid rgba(90, 200, 250, 0.4);
+      box-shadow: 0 0 20px rgba(255, 107, 157, 0.3), inset 0 0 10px #2a3a5a;
+      backdrop-filter: blur(4px);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: 8px;
+      overflow: visible;
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: wait;
+        filter: grayscale(0.5);
+      }
+
+      /* 瓶身光晕 */
+      .phial-glow {
+        position: absolute;
+        inset: 0;
+        border-radius: 40px;
+        background: radial-gradient(
+          circle at 30% 50%,
+          rgba(255, 200, 230, 0.2),
+          transparent 70%
+        );
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+
+      /* 水母伞盖（悬浮在瓶口） */
+      .jelly-umbrella {
+        position: absolute;
+        top: -14px;
+        left: 10px;
+        width: 20px;
+        height: 20px;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(90, 200, 250, 0.6),
+          transparent 70%
+        );
+        border-radius: 50% 50% 30% 30%;
+        filter: blur(3px);
+        opacity: 0.7;
+        transition: all 0.4s;
+        animation: floatUmbrella 3s infinite alternate;
+      }
+
+      /* 主图标区域 */
+      .phial-icon {
+        font-size: 1.3rem;
+        color: var(--jelly-blue);
+        filter: drop-shadow(0 0 8px #ffb3c6);
+        transition: transform 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.8rem;
+        height: 1.8rem;
+
+        &.loading {
+          transform: scale(1.1);
+        }
+
+        .loader {
+          display: inline-block;
+          width: 1.2rem;
+          height: 1.2rem;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: var(--jelly-blue);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        &.playing {
+          color: var(--venom-pink);
+          filter: drop-shadow(0 0 12px hotpink);
+        }
+      }
+
+      .status {
+        font-size: 0.85rem;
+        color: #d0d5f0;
+        font-style: italic;
+        letter-spacing: 0.05rem;
+        position: relative;
+        z-index: 2;
+      }
+
+      /* 漂浮的水母触须（多条） */
+      .jelly-tentacle {
+        position: absolute;
+        bottom: -6px;
+        width: 8px;
+        height: 15px;
+        background: linear-gradient(
+          to top,
+          rgba(90, 200, 250, 0.6),
+          transparent
+        );
+        border-radius: 2px;
+        filter: blur(2px);
+        animation: tentacleSway 2s infinite alternate;
+        pointer-events: none;
+
+        &:nth-child(4) {
+          left: 20%;
+          animation-delay: 0s;
+        }
+        &:nth-child(5) {
+          left: 40%;
+          animation-delay: 0.3s;
+          height: 20px;
+          background: rgba(255, 107, 157, 0.4);
+        }
+        &:nth-child(6) {
+          left: 60%;
+          animation-delay: 0.6s;
+          height: 12px;
+        }
+      }
+
+      /* 底部触须光晕 */
+      .tentacle-glow {
+        position: absolute;
+        bottom: -10px;
+        left: 10%;
+        width: 80%;
+        height: 15px;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(90, 200, 250, 0.4),
+          transparent 70%
+        );
+        filter: blur(5px);
+        border-radius: 50%;
+        transition: height 0.3s;
+      }
+
+      &:hover {
+        transform: translateY(-3px);
+        border-color: var(--jelly-blue);
+        box-shadow: 0 0 30px rgba(90, 200, 250, 0.5);
+
+        .jelly-umbrella {
+          top: -18px;
+          opacity: 1;
+          filter: blur(2px);
+        }
+        .jelly-tentacle {
+          height: 20px;
+          filter: blur(1px);
+        }
+        .tentacle-glow {
+          height: 20px;
+          background: radial-gradient(
+            ellipse at center,
+            rgba(90, 200, 250, 0.6),
+            transparent 70%
+          );
+        }
+      }
+
+      // 移动端下适当缩小
+      @media (max-width: 768px) {
+        margin-left: 0;
+        margin-top: 8px;
+        padding: 4px 14px;
+        .phial-icon {
+          font-size: 1.1rem;
+        }
+        .status {
+          font-size: 0.75rem;
+        }
+      }
+    }
+
+    /* 动画定义 */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes floatUmbrella {
+      0% {
+        transform: translateY(0) rotate(-5deg);
+        opacity: 0.5;
+      }
+      100% {
+        transform: translateY(-4px) rotate(5deg);
+        opacity: 0.9;
+      }
+    }
+
+    @keyframes tentacleSway {
+      0% {
+        transform: translateY(0) scaleY(1);
+        opacity: 0.5;
+      }
+      100% {
+        transform: translateY(-4px) scaleY(1.2);
+        opacity: 1;
+      }
+    } 
   }
 
   // 移动端汉堡菜单 (水母伞造型)
