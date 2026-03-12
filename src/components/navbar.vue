@@ -33,7 +33,7 @@
 
       <!-- 外链：霜落映界 (保留) -->
       <a
-        href="http://slty.site/#/redirector"
+        href="https://slty.site/#/redirector"
         target="_blank"
         rel="noopener"
         class="nav-item external"
@@ -117,7 +117,7 @@ function toggleMobileNav() {
 
 const siteId = "kante";
 const onlineCount = ref<number | null>(null);
-const socket: any = io("http://36.150.237.25:3000", {
+const socket: any = io(import.meta.env.VITE_API_BASE_URL, {
   query: { siteId },
 });
 // 音乐播放控制（增强版）
@@ -127,9 +127,9 @@ const audioLoading = ref(false); // 加载状态
 
 // 三首候选曲目（坎特蕾拉风格）
 const musicList = [
-  "http://36.150.237.25:3000/music/悠忽舞于梦中.mp3",
-  "http://36.150.237.25:3000/music/沉沦幻海（伴奏）.mp3",
-  "http://36.150.237.25:3000/music/Hush.mp3",
+  import.meta.env.VITE_API_BASE_URL + "/music/悠忽舞于梦中.mp3",
+  import.meta.env.VITE_API_BASE_URL + "/music/沉沦幻海（伴奏）.mp3",
+  import.meta.env.VITE_API_BASE_URL + "/music/Hush.mp3",
 ];
 const currentMusic = ref(
   musicList[Math.floor(Math.random() * musicList.length)]
@@ -688,7 +688,7 @@ onBeforeUnmount(() => {
         transform: translateY(-4px) scaleY(1.2);
         opacity: 1;
       }
-    } 
+    }
   }
 
   // 移动端汉堡菜单 (水母伞造型)
